@@ -65,6 +65,19 @@ function nvd3Vis(slice) {
                 chart.stacked(fd.bar_stacked);
                 break;
 
+                case 'sd_dist_bar':
+                  chart = nv.models.multiBarChart()
+                      .showControls(true) //Allow user to switch between 'Grouped' and 'Stacked' mode.
+                      .reduceXTicks(false)
+                      .rotateLabels(45)
+                      .groupSpacing(0.1); //Distance between each group of bars.
+
+                  chart.xAxis
+                      .showMaxMin(false);
+
+                  chart.stacked(fd.bar_stacked);
+                  break;
+
               case 'pie':
                 chart = nv.models.pieChart();
                 colorKey = 'x';

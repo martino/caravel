@@ -12,6 +12,7 @@ import hashlib
 import json
 import logging
 import uuid
+import requests
 from collections import OrderedDict, defaultdict
 from datetime import datetime, timedelta
 import pandas as pd
@@ -1131,6 +1132,24 @@ class DistributionBarViz(DistributionPieViz):
         return chart_data
 
 
+class SDDistributionBarViz(DistributionBarViz):
+    verbose_name = "SD Distribution - Bar Chart"
+    viz_type = "sd_dist_bar"
+
+    def get_df(self, query_obj=None):
+        df = super(DistributionPieViz, self).get_df(query_obj)  # noqa
+        fd = self.form_data
+
+        row = df.groupby(self.groupby).sum()[self.metrics[0]].copy()
+        # row.sort(ascending=False)
+        columns = fd.get('columns') or []
+        pt = df.pivot_table(
+            index=self.groupby,
+            columns=columns,
+            values=self.metrics)
+        pt = pt.reindex(row.index)
+        return pt
+
 class SunburstViz(BaseViz):
 
     """A multi level sunburst chart"""
@@ -1439,6 +1458,167 @@ class IFrameViz(BaseViz):
     },)
 
 
+class SDCompanies(BaseViz):
+
+    """A filter to show companies data"""
+
+    viz_type = "companies"
+    verbose_name = "Companies"
+    is_timeseries = False
+    credits = '<a href="https://spaziodati.eu">Spaziodati</a>'
+    fieldsets = ({
+        'label': None,
+        'fields': (
+            'groupby',
+            'metric',
+        )
+    },)
+    form_overrides = {
+        'groupby': {
+            'label': 'Filter fields',
+            'description': "The fields you want to filter on",
+        },
+    }
+
+    def query_obj(self):
+        qry = super(SDCompanies, self).query_obj()
+        groupby = self.form_data['groupby']
+        if len(groupby) < 1:
+            raise Exception("Pick at least one filter field")
+        qry['metrics'] = [
+            self.form_data['metric']]
+        return qry
+
+    def get_data(self):
+        qry = self.query_obj()
+        filters = [g for g in qry['groupby']]
+        d = {}
+        token = config.get("ATOKA_TOKEN")
+        if token is None:
+            raise Exception("Set your atoka token in the config file")
+
+        for flt in filters:
+            qry['groupby'] = [flt]
+            df = super(SDCompanies, self).get_df(qry)
+            all_achenes = [row[0] for row in df.itertuples(index=False)][:20]
+            atoka_api_url = 'https://api-u.spaziodati.eu/v2/companies?token={}&packages=base&limit=30&ids={}'
+            req_url = atoka_api_url.format(token, ','.join(all_achenes))
+            response = requests.get(req_url)
+            companies_data = response.json().get('items', [])
+            d['atokaData'] = [
+                {'name': company.get('name')}
+                for company in companies_data
+            ]
+        return d
+
+
+class SDPeople(BaseViz):
+
+    """A filter to show companies data"""
+
+    viz_type = "people"
+    verbose_name = "People"
+    is_timeseries = False
+    credits = '<a href="https://spaziodati.eu">Spaziodati</a>'
+    fieldsets = ({
+        'label': None,
+        'fields': (
+            'groupby',
+            'metric',
+        )
+    },)
+    form_overrides = {
+        'groupby': {
+            'label': 'Filter fields',
+            'description': "The fields you want to filter on",
+        },
+    }
+
+    def query_obj(self):
+        qry = super(SDPeople, self).query_obj()
+        groupby = self.form_data['groupby']
+        if len(groupby) < 1:
+            raise Exception("Pick at least one filter field")
+        qry['metrics'] = [
+            self.form_data['metric']]
+        return qry
+
+    def get_data(self):
+        qry = self.query_obj()
+        filters = [g for g in qry['groupby']]
+        d = {}
+
+        token = config.get("ATOKA_TOKEN")
+        if token is None:
+            raise Exception("Set your atoka token in the config file")
+
+        for flt in filters:
+            qry['groupby'] = [flt]
+            df = super(SDPeople, self).get_df(qry)
+            all_achenes = [row[0] for row in df.itertuples(index=False)][:20]
+            atoka_api_url = 'https://api-u.spaziodati.eu/v2/people?token={}&packages=base&limit=30&ids={}'
+            req_url = atoka_api_url.format(token, ','.join(all_achenes))
+            response = requests.get(req_url)
+            people_data = response.json().get('items', [])
+            d['atokaData'] = [
+                {'name': person.get('name')}
+                for person in people_data
+            ]
+        return d
+
+
+class SDMap(BaseViz):
+
+    """A filter to show companies data"""
+
+    viz_type = "map"
+    verbose_name = "Map"
+    is_timeseries = False
+    credits = '<a href="https://spaziodati.eu">Spaziodati</a>'
+    fieldsets = (
+
+        {
+        'label': 'Map Options',
+        'fields': (
+            'map_type',
+            'groupby',
+            'metric',
+        )
+    },)
+    form_overrides = {
+        'groupby': {
+            'label': 'Filter fields',
+            'description': "The fields you want to filter on",
+        },
+    }
+
+    def query_obj(self):
+        qry = super(SDMap, self).query_obj()
+        groupby = self.form_data['groupby']
+        if len(groupby) < 1:
+            raise Exception("Pick at least one filter field")
+        qry['metrics'] = [
+            self.form_data['metric']]
+        return qry
+
+    def get_data(self):
+        qry = self.query_obj()
+        filters = [g for g in qry['groupby']]
+        d = {}
+        qry_filter = qry.get('filter', [])
+        sql_where = ''
+        if qry_filter:
+            all_filters = []
+            for flt in qry_filter:
+                if flt[1] == 'in':
+                    all_filters += [' OR '.join(["{} = '{}'".format(flt[0], v) for v in flt[2].split(',')])]
+            if all_filters:
+                sql_where = 'WHERE {}'.format(' AND '.join(all_filters))
+        d['sqlWhere'] = sql_where
+        d['mapType'] = self.form_data['map_type']
+        return d
+
+
 class ParallelCoordinatesViz(BaseViz):
 
     """Interactive parallel coordinate implementation
@@ -1569,6 +1749,10 @@ viz_types_list = [
     HeatmapViz,
     BoxPlotViz,
     TreemapViz,
+    SDDistributionBarViz,
+    SDCompanies,
+    SDPeople,
+    SDMap,
 ]
 
 viz_types = OrderedDict([(v.viz_type, v) for v in viz_types_list

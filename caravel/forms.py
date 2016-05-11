@@ -458,6 +458,11 @@ class FormFactory(object):
                 description="D3 format syntax for y axis "
                             "https://github.com/mbostock/\n"
                             "d3/wiki/Formatting"),
+            'map_type':  SelectField(
+                "Map Type",
+                choices=self.choicify(['default', 'heatmap']),
+                default="default",
+                description="Select the map type"),
             'markup_type': SelectField(
                 "Markup Type",
                 choices=self.choicify(['markdown', 'html']),
