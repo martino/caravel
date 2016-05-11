@@ -18,6 +18,7 @@ dist
 caravel.egg-info/
 app.db
 *.bak
+.idea
 
 # Node.js, webpack artifacts
 *.entry.js
