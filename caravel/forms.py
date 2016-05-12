@@ -463,6 +463,16 @@ class FormFactory(object):
                 choices=self.choicify(['default', 'heatmap']),
                 default="default",
                 description="Select the map type"),
+            'map_table': TextField(
+                "CartoDB table",
+                description="CartoDB table name"),
+            'map_select': TextField(
+                "CartoDB SQL select clausule",
+                description="CartoDB SQL select",
+                default="*"),
+            'map_where': TextField(
+                "CartoDB SQL where clausule",
+                description="CartoDB SQL where"),
             'markup_type': SelectField(
                 "Markup Type",
                 choices=self.choicify(['markdown', 'html']),

@@ -1576,13 +1576,13 @@ class SDMap(BaseViz):
     is_timeseries = False
     credits = '<a href="https://spaziodati.eu">Spaziodati</a>'
     fieldsets = (
-
         {
         'label': 'Map Options',
         'fields': (
             'map_type',
-            'groupby',
-            'metric',
+            'map_select',
+            'map_table',
+            'map_where',
         )
     },)
     form_overrides = {
@@ -1594,27 +1594,45 @@ class SDMap(BaseViz):
 
     def query_obj(self):
         qry = super(SDMap, self).query_obj()
-        groupby = self.form_data['groupby']
-        if len(groupby) < 1:
-            raise Exception("Pick at least one filter field")
-        qry['metrics'] = [
-            self.form_data['metric']]
+        # groupby = self.form_data['groupby']
+        # if len(groupby) < 1:
+        #     raise Exception("Pick at least one filter field")
+        # qry['metrics'] = [
+        #     self.form_data['metric']]
         return qry
 
     def get_data(self):
         qry = self.query_obj()
-        filters = [g for g in qry['groupby']]
+        # filters = [g for g in qry['groupby']]
         d = {}
         qry_filter = qry.get('filter', [])
+
+        map_table = self.form_data['map_table']
+        if map_table is None:
+            raise Exception("Set a remote CartoDB table")
+        map_select = self.form_data['map_select']
+        map_where = self.form_data['map_where']
+        all_where_stats = []
+
         sql_where = ''
-        if qry_filter:
-            all_filters = []
+        if qry_filter or map_where:
+            other_filters = []
             for flt in qry_filter:
                 if flt[1] == 'in':
-                    all_filters += [' OR '.join(["{} = '{}'".format(flt[0], v) for v in flt[2].split(',')])]
-            if all_filters:
-                sql_where = 'WHERE {}'.format(' AND '.join(all_filters))
+                    other_filters += ['({})'.format(' OR '.join(["{} = '{}'".format(flt[0], v) for v in flt[2].split(',')]))]
+
+            if other_filters:
+                other_filters_where = '{}'.format(' AND '.join(other_filters))
+                all_where_stats.append(other_filters_where)
+            if map_where:
+                all_where_stats.append(map_where)
+
+            if all_where_stats:
+                sql_where = 'WHERE {}'.format(' AND '.join(all_where_stats))
+
         d['sqlWhere'] = sql_where
+        d['sqlTable'] = map_table
+        d['sqlSelect'] = map_select
         d['mapType'] = self.form_data['map_type']
         return d
 

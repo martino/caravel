@@ -9,7 +9,7 @@ function mapWidget(slice) {
     $.getJSON(slice.jsonEndpoint(), function (payload) {
       var isHeatmap = payload.data.mapType === 'heatmap'
         , mapName = 'cartodbmap'
-        , remoteQuery = "SELECT * FROM more_comapnies " + payload.data.sqlWhere
+        , remoteQuery = "SELECT " + payload.data.sqlSelect + " FROM " + payload.data.sqlTable + " " + payload.data.sqlWhere
         , basicTorque = {
           "type": "torque",
           "order": 1,
@@ -57,7 +57,7 @@ function mapWidget(slice) {
           mapName += 'torque';
         }
         slice.container.html('<div id="' + mapName + '" style="min-height: 100%"></div>');
-        
+
         widgetMap= new L.Map(mapName, {
           center: [45.59049774946348, 9.337692260742188],
           zoom: 8
