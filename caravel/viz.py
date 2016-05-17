@@ -8,6 +8,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import copy
 import hashlib
 import json
 import logging
@@ -23,6 +24,7 @@ from pandas.io.json import dumps
 from six import string_types
 from werkzeug.datastructures import ImmutableMultiDict
 from werkzeug.urls import Href
+from dateutil import relativedelta as rdelta
 
 from caravel import app, utils, cache
 from caravel.forms import FormFactory
@@ -322,21 +324,24 @@ class TableViz(BaseViz):
     verbose_name = "Table View"
     credits = 'a <a href="https://github.com/airbnb/caravel">Caravel</a> original'
     fieldsets = ({
-        'label': "Chart Options",
-        'fields': (
-            'row_limit',
-            ('include_search', None),
-        )
-    }, {
         'label': "GROUP BY",
+        'description': 'Use this section if you want a query that aggregates',
         'fields': (
             'groupby',
             'metrics',
         )
     }, {
         'label': "NOT GROUPED BY",
+        'description': 'Use this section if you want to query atomic rows',
         'fields': (
             'all_columns',
+        )
+    }, {
+        'label': "Options",
+        'fields': (
+            'table_timestamp_format',
+            'row_limit',
+            ('include_search', None),
         )
     })
     is_timeseries = False
@@ -536,6 +541,67 @@ class TreemapViz(BaseViz):
         chart_data = [{"name": metric, "children": self._nest(metric, df)}
                       for metric in df.columns]
         return chart_data
+
+
+class CalHeatmapViz(BaseViz):
+
+    """Calendar heatmap."""
+
+    viz_type = "cal_heatmap"
+    verbose_name = "Calender Heatmap"
+    credits = (
+        '<a href=https://github.com/wa0x6e/cal-heatmap>cal-heatmap</a>')
+    is_timeseries = True
+    fieldsets = ({
+        'label': None,
+        'fields': (
+            'metric',
+            'domain_granularity',
+            'subdomain_granularity',
+        ),
+    },)
+
+    def get_df(self, query_obj=None):
+        df = super(CalHeatmapViz, self).get_df(query_obj)
+        return df
+
+    def get_data(self):
+        df = self.get_df()
+        form_data = self.form_data
+
+        df.columns = ["timestamp", "metric"]
+        timestamps = {str(obj["timestamp"].value / 10**9):
+                      obj.get("metric") for obj in df.to_dict("records")}
+
+        start = utils.parse_human_datetime(form_data.get("since"))
+        end = utils.parse_human_datetime(form_data.get("until"))
+        domain = form_data.get("domain_granularity")
+        diff_delta = rdelta.relativedelta(end, start)
+        diff_secs = (end - start).total_seconds()
+
+        if domain == "year":
+            range_ = diff_delta.years + 1
+        elif domain == "month":
+            range_ = diff_delta.years * 12 + diff_delta.months + 1
+        elif domain == "week":
+            range_ = diff_delta.years * 53 + diff_delta.weeks + 1
+        elif domain == "day":
+            range_ = diff_secs // (24*60*60) + 1
+        else:
+            range_ = diff_secs // (60*60) + 1
+
+        return {
+            "timestamps": timestamps,
+            "start": start,
+            "domain": domain,
+            "subdomain": form_data.get("subdomain_granularity"),
+            "range": range_,
+        }
+
+    def query_obj(self):
+        qry = super(CalHeatmapViz, self).query_obj()
+        qry["metrics"] = [self.form_data["metric"]]
+        return qry
 
 
 class NVD3Viz(BaseViz):
@@ -1658,14 +1724,14 @@ class ParallelCoordinatesViz(BaseViz):
             'metrics',
             'secondary_metric',
             'limit',
-            ('show_datatable', None),
+            ('show_datatable', 'include_series'),
         )
     },)
 
     def query_obj(self):
         d = super(ParallelCoordinatesViz, self).query_obj()
         fd = self.form_data
-        d['metrics'] = fd.get('metrics')
+        d['metrics'] = copy.copy(fd.get('metrics'))
         second = fd.get('secondary_metric')
         if second not in d['metrics']:
             d['metrics'] += [second]
@@ -1674,7 +1740,6 @@ class ParallelCoordinatesViz(BaseViz):
 
     def get_data(self):
         df = self.get_df()
-        df = df[[self.form_data.get('series')] + self.form_data.get('metrics')]
         return df.to_dict(orient="records")
 
 
@@ -1743,6 +1808,25 @@ class HeatmapViz(BaseViz):
         return df.to_dict(orient="records")
 
 
+class HorizonViz(NVD3TimeSeriesViz):
+
+    """Horizon chart
+
+    https://www.npmjs.com/package/d3-horizon-chart
+    """
+
+    viz_type = "horizon"
+    verbose_name = "Horizon Charts"
+    credits = (
+        '<a href="https://www.npmjs.com/package/d3-horizon-chart">'
+        'd3-horizon-chart</a>')
+    fieldsets = [NVD3TimeSeriesViz.fieldsets[0]] + [{
+        'label': 'Chart Options',
+        'fields': (
+            ('series_height', 'horizon_color_scale'),
+        ), }]
+
+
 viz_types_list = [
     TableViz,
     PivotTableViz,
@@ -1771,6 +1855,8 @@ viz_types_list = [
     SDCompanies,
     SDPeople,
     SDMap,
+    CalHeatmapViz,
+    HorizonViz,
 ]
 
 viz_types = OrderedDict([(v.viz_type, v) for v in viz_types_list

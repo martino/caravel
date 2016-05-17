@@ -90,6 +90,10 @@ class AuditMixinNullable(AuditMixin):
         return '{}'.format(self.changed_by or '')
 
     @renders('changed_on')
+    def changed_on_(self):
+        return '<span class="no-wrap">{}</span>'.format(self.changed_on)
+
+    @renders('changed_on')
     def modified(self):
         s = humanize.naturaltime(datetime.now() - self.changed_on)
         return '<span class="no-wrap">{}</nobr>'.format(s)
@@ -337,6 +341,14 @@ class Queryable(object):
     def url(self):
         return '/{}/edit/{}'.format(self.baselink, self.id)
 
+    @property
+    def explore_url(self):
+        if self.default_endpoint:
+            return self.default_endpoint
+        else:
+            return "/caravel/explore/{obj.type}/{obj.id}/".format(obj=self)
+
+
 
 class Database(Model, AuditMixinNullable):
 
@@ -394,6 +406,12 @@ class Database(Model, AuditMixinNullable):
                 Grain("month", "DATE(DATE_SUB({col}, "
                       "INTERVAL DAYOFMONTH({col}) - 1 DAY))"),
             ),
+            'sqlite': (
+                Grain('Time Column', '{col}'),
+                Grain('day', 'DATE({col})'),
+                Grain("week", "DATE({col}, -strftime('%w', {col}) || ' days')"),
+                Grain("month", "DATE({col}, -strftime('%d', {col}) || ' days')"),
+            ),
             'postgresql': (
                 Grain("Time Column", "{col}"),
                 Grain("second", "DATE_TRUNC('second', {col})"),
@@ -409,6 +427,24 @@ class Database(Model, AuditMixinNullable):
         for db_type, grains in db_time_grains.items():
             if self.sqlalchemy_uri.startswith(db_type):
                 return grains
+
+    def dttm_converter(self, dttm):
+        """Returns a string that the database flavor understands as a date"""
+        default = "'{}'".format(dttm.strftime('%Y-%m-%d %H:%M:%S.%f'))
+        iso = dttm.isoformat()
+        d = {
+            'mssql': "CONVERT(DATETIME, '{}', 126)".format(iso), #untested
+            'mysql': default,
+            'oracle':
+                """TO_TIMESTAMP('{}', 'YYYY-MM-DD"T"HH24:MI:SS.ff6')""".format(
+                    dttm.isoformat()),
+            'presto': default,
+            'sqlite': default,
+        }
+        for k, v in d.items():
+            if self.sqlalchemy_uri.startswith(k):
+                return v
+        return default
 
     def grains_dict(self):
         return {grain.name: grain for grain in self.grains()}
@@ -471,7 +507,7 @@ class SqlaTable(Model, Queryable, AuditMixinNullable):
         'Database', backref='tables', foreign_keys=[database_id])
     offset = Column(Integer, default=0)
     cache_timeout = Column(Integer)
-    schema = Column(String(256))
+    schema = Column(String(255))
 
     baselink = "tablemodelview"
 
@@ -528,13 +564,6 @@ class SqlaTable(Model, Queryable, AuditMixinNullable):
     @property
     def name(self):
         return self.table_name
-
-    @property
-    def explore_url(self):
-        if self.default_endpoint:
-            return self.default_endpoint
-        else:
-            return "/caravel/explore/{obj.type}/{obj.id}/".format(obj=self)
 
     @property
     def table_link(self):
@@ -630,14 +659,16 @@ class SqlaTable(Model, Queryable, AuditMixinNullable):
 
             tf = '%Y-%m-%d %H:%M:%S.%f'
             time_filter = [
-                timestamp >= from_dttm.strftime(tf),
-                timestamp <= to_dttm.strftime(tf),
+                timestamp >= text(self.database.dttm_converter(from_dttm)),
+                timestamp <= text(self.database.dttm_converter(to_dttm)),
             ]
             inner_time_filter = copy(time_filter)
             if inner_from_dttm:
-                inner_time_filter[0] = timestamp >= inner_from_dttm.strftime(tf)
+                inner_time_filter[0] = timestamp >= text(
+                    self.database.dttm_converter(inner_from_dttm))
             if inner_to_dttm:
-                inner_time_filter[1] = timestamp <= inner_to_dttm.strftime(tf)
+                inner_time_filter[1] = timestamp <= text(
+                    self.database.dttm_converter(inner_to_dttm))
         else:
             inner_time_filter = []
 
@@ -836,7 +867,7 @@ class TableColumn(Model, AuditMixinNullable):
     table_id = Column(Integer, ForeignKey('tables.id'))
     table = relationship(
         'SqlaTable', backref='columns', foreign_keys=[table_id])
-    column_name = Column(String(256))
+    column_name = Column(String(255))
     verbose_name = Column(String(1024))
     is_dttm = Column(Boolean, default=False)
     is_active = Column(Boolean, default=True)
@@ -875,13 +906,13 @@ class DruidCluster(Model, AuditMixinNullable):
     __tablename__ = 'clusters'
     id = Column(Integer, primary_key=True)
     cluster_name = Column(String(250), unique=True)
-    coordinator_host = Column(String(256))
+    coordinator_host = Column(String(255))
     coordinator_port = Column(Integer)
     coordinator_endpoint = Column(
-        String(256), default='druid/coordinator/v1/metadata')
-    broker_host = Column(String(256))
+        String(255), default='druid/coordinator/v1/metadata')
+    broker_host = Column(String(255))
     broker_port = Column(Integer)
-    broker_endpoint = Column(String(256), default='druid/v2')
+    broker_endpoint = Column(String(255), default='druid/v2')
     metadata_last_refreshed = Column(DateTime)
 
     def __repr__(self):
@@ -903,7 +934,8 @@ class DruidCluster(Model, AuditMixinNullable):
 
     def refresh_datasources(self):
         for datasource in self.get_datasources():
-            DruidDatasource.sync_to_db(datasource, self)
+            if datasource not in config.get('DRUID_DATA_SOURCE_BLACKLIST'):
+                DruidDatasource.sync_to_db(datasource, self)
 
 
 class DruidDatasource(Model, AuditMixinNullable, Queryable):
@@ -916,7 +948,7 @@ class DruidDatasource(Model, AuditMixinNullable, Queryable):
 
     __tablename__ = 'datasources'
     id = Column(Integer, primary_key=True)
-    datasource_name = Column(String(256), unique=True)
+    datasource_name = Column(String(255), unique=True)
     is_featured = Column(Boolean, default=False)
     is_hidden = Column(Boolean, default=False)
     description = Column(Text)
@@ -1009,6 +1041,7 @@ class DruidDatasource(Model, AuditMixinNullable, Queryable):
             flasher("Adding new datasource [{}]".format(name), "success")
         else:
             flasher("Refreshing datasource [{}]".format(name), "info")
+        session.flush()
         datasource.cluster = cluster
 
         cols = datasource.latest_metadata()
@@ -1030,8 +1063,10 @@ class DruidDatasource(Model, AuditMixinNullable, Queryable):
                 col_obj.filterable = True
             if col_obj:
                 col_obj.type = cols[col]['type']
+            session.flush()
             col_obj.datasource = datasource
             col_obj.generate_metrics()
+            session.flush()
 
     def query(  # druid
             self, groupby, metrics,
@@ -1068,7 +1103,7 @@ class DruidDatasource(Model, AuditMixinNullable, Queryable):
             field_names = []
             for _f in _fields:
                 _type = _f.get('type')
-                if _type == 'fieldAccess':
+                if _type in ['fieldAccess', 'hyperUniqueCardinality']:
                     field_names.append(_f.get('fieldName'))
                 elif _type == 'arithmetic':
                     field_names += recursive_get_fields(_f)
@@ -1306,7 +1341,7 @@ class DruidColumn(Model, AuditMixinNullable):
     # Setting enable_typechecks=False disables polymorphic inheritance.
     datasource = relationship('DruidDatasource', backref='columns',
                               enable_typechecks=False)
-    column_name = Column(String(256))
+    column_name = Column(String(255))
     is_active = Column(Boolean, default=True)
     type = Column(String(32))
     groupby = Column(Boolean, default=False)
@@ -1394,7 +1429,7 @@ class DruidColumn(Model, AuditMixinNullable):
             metric.datasource_name = self.datasource_name
             if not m:
                 session.add(metric)
-                session.commit()
+                session.flush()
 
 
 class FavStar(Model):

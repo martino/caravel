@@ -112,7 +112,8 @@ class TableColumnInlineView(CompactCRUDMixin, CaravelModelView):  # noqa
     can_delete = False
     edit_columns = [
         'column_name', 'verbose_name', 'description', 'groupby', 'filterable',
-        'table', 'count_distinct', 'sum', 'min', 'max', 'expression', 'is_dttm']
+        'table', 'count_distinct', 'sum', 'min', 'max', 'expression',
+        'is_dttm', ]
     add_columns = edit_columns
     list_columns = [
         'column_name', 'type', 'groupby', 'filterable', 'count_distinct',
@@ -187,7 +188,7 @@ appbuilder.add_view_no_menu(DruidMetricInlineView)
 
 class DatabaseView(CaravelModelView, DeleteMixin):  # noqa
     datamodel = SQLAInterface(models.Database)
-    list_columns = ['database_name', 'sql_link', 'creator', 'changed_on']
+    list_columns = ['database_name', 'sql_link', 'creator', 'changed_on_']
     add_columns = [
         'database_name', 'sqlalchemy_uri', 'cache_timeout', 'extra']
     search_exclude_columns = ('password',)
@@ -234,7 +235,7 @@ class TableModelView(CaravelModelView, DeleteMixin):  # noqa
     datamodel = SQLAInterface(models.SqlaTable)
     list_columns = [
         'table_link', 'database', 'sql_link', 'is_featured',
-        'changed_by_', 'changed_on', 'perm']
+        'changed_by_', 'changed_on_']
     add_columns = [
         'table_name', 'database', 'schema',
         'default_endpoint', 'offset', 'cache_timeout']
