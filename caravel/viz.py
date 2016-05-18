@@ -1376,8 +1376,11 @@ class SDSankeyViz(SankeyViz):
         if self.form_data['target_field'] is None:
             raise Exception("Target is needed")
 
-        self.form_data['source_field_label'] = " " + self.form_data['source_field_label']
-        self.form_data['target_field_label'] = " " + self.form_data['target_field_label']
+        if self.form_data['source_field_label']:
+            self.form_data['source_field_label'] = " " + self.form_data['source_field_label']
+
+        if self.form_data['target_field_label']:
+            self.form_data['target_field_label'] = " " + self.form_data['target_field_label']
 
         self.form_data['groupby'] = [
             self.form_data['source_field'],
