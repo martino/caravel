@@ -1346,6 +1346,91 @@ class SankeyViz(BaseViz):
         return recs
 
 
+class SDSankeyViz(SankeyViz):
+    viz_type = "sd_sankey"
+    verbose_name = "SDSankey"
+    is_timeseries = False
+    credits = '<a href="https://www.npmjs.com/package/d3-sankey">d3-sankey on npm</a>'
+    fieldsets = (
+        {
+            'label': None,
+            'fields': (
+                'source_field',
+                'source_field_label',
+                'target_field',
+                'target_field_label'
+            )
+        },
+        {
+            'label': None,
+            'fields': (
+                'metric',
+                'row_limit',
+            )
+        },)
+
+    def query_obj(self):
+        if self.form_data['source_field'] is None:
+            raise Exception("Source is needed")
+
+        if self.form_data['target_field'] is None:
+            raise Exception("Target is needed")
+
+        self.form_data['source_field_label'] = " " + self.form_data['source_field_label']
+        self.form_data['target_field_label'] = " " + self.form_data['target_field_label']
+
+        self.form_data['groupby'] = [
+            self.form_data['source_field'],
+            self.form_data['target_field']
+        ]
+
+        qry = super(SDSankeyViz, self).query_obj()
+
+        if len(qry['groupby']) != 2:
+            raise Exception("Pick exactly 2 columns as [Source / Target]")
+        qry['metrics'] = [
+            self.form_data['metric']]
+        return qry
+
+    def get_data(self):
+        df = self.get_df()
+        df.columns = ['source', 'target', 'value']
+        df['source'] = df['source'].apply(
+            lambda v: '{}{}'.format(v, self.form_data['source_field_label'])
+        )
+        df['target'] = df['target'].apply(
+            lambda v: '{}{}'.format(v, self.form_data['target_field_label'])
+        )
+        recs = df.to_dict(orient='records')
+
+        hierarchy = defaultdict(set)
+        for row in recs:
+            hierarchy[row['source']].add(format(row['target']))
+
+        def find_cycle(g):
+            """Whether there's a cycle in a directed graph"""
+            path = set()
+
+            def visit(vertex):
+                path.add(vertex)
+                for neighbour in g.get(vertex, ()):
+                    if neighbour in path or visit(neighbour):
+                        return (vertex, neighbour)
+                path.remove(vertex)
+
+            for v in g:
+                cycle = visit(v)
+                if cycle:
+                    return cycle
+
+        cycle = find_cycle(hierarchy)
+        if cycle:
+            raise Exception(
+                "There's a loop in your Sankey, please provide a tree. "
+                "Here's a faulty link: {}".format(cycle))
+        return recs
+
+
 class DirectedForceViz(BaseViz):
 
     """An animated directed force layout graph visualization"""
@@ -1567,12 +1652,18 @@ class SDCompanies(BaseViz):
             qry['groupby'] = [flt]
             df = super(SDCompanies, self).get_df(qry)
             all_achenes = [row[0] for row in df.itertuples(index=False)][:20]
-            atoka_api_url = 'https://api-u.spaziodati.eu/v2/companies?token={}&packages=base&limit=30&ids={}'
+            atoka_api_url = 'https://api-u.spaziodati.eu/v2/companies?token={}&packages=economics,web&limit=30&ids={}'
             req_url = atoka_api_url.format(token, ','.join(all_achenes))
             response = requests.get(req_url)
             companies_data = response.json().get('items', [])
             d['atokaData'] = [
-                {'name': company.get('name')}
+                {
+                    'name': company.get('name'),
+                    'atokaUrl': 'http://atoka.io/azienda/-/{}/'.format(company.get('id')),
+                    'website': company.get('web', {}).get('websites', [{}])[0].get('url', '-'),
+                    'lastRevenue': company.get('economics').get('balanceSheets', [{}])[0].get('revenue', '-'),
+                    'lastYear': company.get('economics').get('balanceSheets', [{}])[0].get('year', '-')
+                }
                 for company in companies_data
             ]
         return d
@@ -1855,6 +1946,7 @@ viz_types_list = [
     SDCompanies,
     SDPeople,
     SDMap,
+    SDSankeyViz,
     CalHeatmapViz,
     HorizonViz,
 ]

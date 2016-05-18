@@ -7,7 +7,19 @@ function companiesWidget(slice) {
     $.getJSON(slice.jsonEndpoint(), function (payload) {
         console.log(payload.data.atokaData)
         var companiesData = payload.data.atokaData.map(function(data) {
-          return '<li>' + data.name + '</li>';
+          var website = ''
+            , lastRevenue = ''
+            , atokaLink = '<a target="_blank" href="' + data.atokaUrl + '">' + data.name + '</a>';
+
+          if (data.website !== '-') {
+              website = '<a target="_blank" href="' + data.website + '">Sito web</a>'
+          }
+
+          if (data.lastRevenue !== '-') {
+            lastRevenue = 'ultimi ricavi ' + data.lastRevenue + '(' + data.lastYear + ')';
+          }
+
+          return '<li>' + atokaLink + '<br/>' + website + ' ' + lastRevenue + '</li>';
         });
         slice.container.html('<div>companies</div><ul>' + companiesData.join('') + '</ul>');
         slice.done();

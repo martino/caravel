@@ -621,6 +621,22 @@ class FormFactory(object):
                 description=(
                     "Description text that shows up below your Big "
                     "Number")),
+            'source_field': SelectField(
+                'Source field',
+                choices=self.choicify(datasource.groupby_column_names),
+                description="Source field"),
+            'source_field_label': TextField(
+                'Source label',
+                description="Source field label",
+                default="source"),
+            'target_field': SelectField(
+                'Target field',
+                choices=self.choicify(datasource.groupby_column_names),
+                description="Target field"),
+            'target_field_label': TextField(
+                'Target label',
+                description="Target field label",
+                default="target"),
         }
 
     @staticmethod

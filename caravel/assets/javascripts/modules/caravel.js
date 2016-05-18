@@ -27,6 +27,7 @@ var sourceMap = {
   box_plot: 'nvd3_vis.js',
   pivot_table: 'pivot_table.js',
   sankey: 'sankey.js',
+  sd_sankey: 'sd_sankey.js',
   sunburst: 'sunburst.js',
   table: 'table.js',
   word_cloud: 'word_cloud.js',
