@@ -10,6 +10,8 @@ require('./nvd3_vis.css');
 
 function nvd3Vis(slice) {
   var chart;
+  var svg;
+  var selectedValues = [];
   var colorKey = 'key';
 
   var render = function () {
@@ -65,18 +67,18 @@ function nvd3Vis(slice) {
                 chart.stacked(fd.bar_stacked);
                 break;
 
-                case 'sd_dist_bar':
-                  chart = nv.models.multiBarChart()
-                      .showControls(true) //Allow user to switch between 'Grouped' and 'Stacked' mode.
-                      .reduceXTicks(false)
-                      .rotateLabels(45)
-                      .groupSpacing(0.1); //Distance between each group of bars.
+              case 'sd_dist_bar':
+                chart = nv.models.multiBarChart()
+                    .showControls(true) //Allow user to switch between 'Grouped' and 'Stacked' mode.
+                    .reduceXTicks(false)
+                    .rotateLabels(45)
+                    .groupSpacing(0.1); //Distance between each group of bars.
 
-                  chart.xAxis
-                      .showMaxMin(false);
+                chart.xAxis
+                    .showMaxMin(false);
 
-                  chart.stacked(fd.bar_stacked);
-                  break;
+                chart.stacked(fd.bar_stacked);
+                break;
 
               case 'pie':
                 chart = nv.models.pieChart();
@@ -212,7 +214,7 @@ function nvd3Vis(slice) {
             return px.color.category21(d[colorKey]);
           });
 
-          var svg = d3.select(slice.selector).select("svg");
+          svg = d3.select(slice.selector).select("svg");
           if (svg.empty()) {
             svg = d3.select(slice.selector).append("svg");
           }
@@ -224,6 +226,36 @@ function nvd3Vis(slice) {
             .call(chart);
 
           return chart;
+        }, function () {
+          if (viz_type === 'pie') {
+            d3.selectAll('.nv-slice')
+              .on('click', function(d) {
+                var sliceValue = d.data.x
+                  , filterName = payload.form_data.groupby[0];
+
+                if (selectedValues.length == 0) {
+                  // add filter
+                  selectedValues = [sliceValue];
+                  svg.selectAll(".nv-slice").attr("class", "nv-slice opacified");
+                  d3.select(this).attr("class", "nv-slice");
+                  slice.setFilter(filterName, selectedValues);
+                } else {
+                  if (selectedValues[0] != sliceValue) {
+                    // remove and add filter
+                    slice.removeFilter(filterName, selectedValues);
+                    selectedValues = [sliceValue];
+                    svg.selectAll(".nv-slice").attr("class", "nv-slice opacified");
+                    d3.select(this).attr("class", "nv-slice");
+                    slice.setFilter(filterName, selectedValues);
+                  } else {
+                    // remove filter
+                    slice.removeFilter(filterName, selectedValues);
+                    selectedValues = [];
+                    svg.selectAll(".nv-slice").attr("class", "nv-slice");
+                  }
+                }
+              });
+          }
         });
 
         slice.done(payload);

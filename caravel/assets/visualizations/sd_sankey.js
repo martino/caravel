@@ -155,10 +155,11 @@ function sankeyVis(slice) {
       function click(d) {
         var sourceValue = d.source.name.replace(json.form_data.source_field_label, "")
           , targetValue = d.target.name.replace(json.form_data.target_field_label, "");
-
+        console.log("'"+json.form_data.source_field_label+"'");
+        console.log(d.source.name, json.form_data.source_field_label, sourceValue);
         svg.selectAll(".link").attr("class", "link");
         slice.setFilter(json.form_data.groupby[0], [sourceValue]);
-        slice.setFilter(json.form_data.groupby[1], [targetValue]);
+        slice.addFilter(json.form_data.groupby[1], [targetValue]);
         d3.select(this).attr("class", "link selected");
       }
 
