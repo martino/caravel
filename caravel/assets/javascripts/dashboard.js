@@ -17,7 +17,7 @@ require('../stylesheets/dashboard.css');
 
 var Dashboard = function (dashboardData) {
   var dashboard = $.extend(dashboardData, {
-    filters: {},
+    filters: {'default': {}},
     init: function () {
       this.initDashboardView();
       this.firstLoad = true;
@@ -47,19 +47,19 @@ var Dashboard = function (dashboardData) {
       if (merge === undefined) {
         merge = true;
       }
-      if (!(slice_id in this.filters)) {
-        this.filters[slice_id] = {};
+      if (!(slice_id in this.filters.default)) {
+        this.filters.default[slice_id] = {};
       }
-      if (!(col in this.filters[slice_id]) || !merge) {
-        this.filters[slice_id][col] = vals;
+      if (!(col in this.filters.default[slice_id]) || !merge) {
+        this.filters.default[slice_id][col] = vals;
       } else {
-        this.filters[slice_id][col] = d3.merge([this.filters[slice_id][col], vals]);
+        this.filters.default[slice_id][col] = d3.merge([this.filters.default[slice_id][col], vals]);
       }
       this.refreshExcept(slice_id);
     },
     readFilters: function () {
       // Returns a list of human readable active filters
-      return JSON.stringify(this.filters, null, 4);
+      return JSON.stringify(this.filters.default, null, 4);
     },
     stopPeriodicRender: function () {
       if (this.refreshTimer) {
@@ -102,19 +102,19 @@ var Dashboard = function (dashboardData) {
       });
     },
     clearFilters: function (slice_id) {
-      delete this.filters[slice_id];
+      delete this.filters.default[slice_id];
       this.refreshExcept(slice_id);
     },
     removeFilter: function (slice_id, col, vals) {
-      if (slice_id in this.filters) {
-        if (col in this.filters[slice_id]) {
+      if (slice_id in this.filters.default) {
+        if (col in this.filters.default[slice_id]) {
           var a = [];
-          this.filters[slice_id][col].forEach(function (v) {
+          this.filters.default[slice_id][col].forEach(function (v) {
             if (vals.indexOf(v) < 0) {
               a.push(v);
             }
           });
-          this.filters[slice_id][col] = a;
+          this.filters.default[slice_id][col] = a;
         }
       }
       this.refreshExcept(slice_id);
