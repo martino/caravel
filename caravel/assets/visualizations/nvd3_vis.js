@@ -227,34 +227,44 @@ function nvd3Vis(slice) {
 
           return chart;
         }, function () {
-          if (viz_type === 'pie') {
-            d3.selectAll('.nv-slice')
-              .on('click', function(d) {
-                var sliceValue = d.data.x
-                  , filterName = payload.form_data.groupby[0];
+          switch (viz_type) {
+            case 'pie':
+              svg.selectAll('.nv-slice')
+                .on('click', function(d) {
+                  var sliceValue = d.data.x
+                    , filterName = payload.form_data.groupby[0];
 
-                if (selectedValues.length == 0) {
-                  // add filter
-                  selectedValues = [sliceValue];
-                  svg.selectAll(".nv-slice").attr("class", "nv-slice opacified");
-                  d3.select(this).attr("class", "nv-slice");
-                  slice.setFilter(filterName, selectedValues);
-                } else {
-                  if (selectedValues[0] != sliceValue) {
-                    // remove and add filter
-                    slice.removeFilter(filterName, selectedValues);
+                  if (selectedValues.length == 0) {
+                    // add filter
                     selectedValues = [sliceValue];
                     svg.selectAll(".nv-slice").attr("class", "nv-slice opacified");
                     d3.select(this).attr("class", "nv-slice");
                     slice.setFilter(filterName, selectedValues);
                   } else {
-                    // remove filter
-                    slice.removeFilter(filterName, selectedValues);
-                    selectedValues = [];
-                    svg.selectAll(".nv-slice").attr("class", "nv-slice");
+                    if (selectedValues[0] != sliceValue) {
+                      // remove and add filter
+                      slice.removeFilter(filterName, selectedValues);
+                      selectedValues = [sliceValue];
+                      svg.selectAll(".nv-slice").attr("class", "nv-slice opacified");
+                      d3.select(this).attr("class", "nv-slice");
+                      slice.setFilter(filterName, selectedValues);
+                    } else {
+                      // remove filter
+                      slice.removeFilter(filterName, selectedValues);
+                      selectedValues = [];
+                      svg.selectAll(".nv-slice").attr("class", "nv-slice");
+                    }
                   }
-                }
-              });
+                });
+              break;
+            case 'sd_dist_bar':
+              svg.selectAll('.nv-bar')
+                .on('click', function(d) {
+                  var sliceValue = d.x
+                    , filterName = payload.form_data.groupby[0];
+                  console.log(sliceValue, filterName);
+                });
+              break;
           }
         });
 
