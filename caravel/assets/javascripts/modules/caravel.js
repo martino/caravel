@@ -211,7 +211,7 @@ var px = (function () {
         var parser = document.createElement('a');
         parser.href = data.json_endpoint;
         if (dashboard !== undefined) {
-          var flts = encodeURIComponent(JSON.stringify(dashboard.filters));
+          var flts = encodeURIComponent(JSON.stringify(dashboard.filters.default));
           qrystr = parser.search + "&extra_filters=" + flts;
         } else if ($('#query').length === 0) {
           qrystr = parser.search;
