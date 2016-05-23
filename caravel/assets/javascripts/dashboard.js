@@ -40,26 +40,33 @@ var Dashboard = function (dashboardData) {
       this.refreshTimer = null;
       this.startPeriodicRender(0);
     },
-    setFilter: function (slice_id, col, vals) {
-      this.addFilter(slice_id, col, vals, false);
+    getFilterSet: function (filter_set_name) {
+      if (!this.filters.hasOwnProperty(filter_set_name)) {
+        this.filters[filter_set_name] = {};
+      }
+      return this.filters[filter_set_name];
     },
-    addFilter: function (slice_id, col, vals, merge) {
+    setFilter: function (filter_set_name, slice_id, col, vals) {
+      this.addFilter(filter_set_name, slice_id, col, vals, false);
+    },
+    addFilter: function (filter_set_name, slice_id, col, vals, merge) {
+      var filterSet = this.getFilterSet(filter_set_name);
       if (merge === undefined) {
         merge = true;
       }
-      if (!(slice_id in this.filters.default)) {
-        this.filters.default[slice_id] = {};
+      if (!(slice_id in filterSet)) {
+        filterSet[slice_id] = {};
       }
-      if (!(col in this.filters.default[slice_id]) || !merge) {
-        this.filters.default[slice_id][col] = vals;
+      if (!(col in filterSet[slice_id]) || !merge) {
+        filterSet[slice_id][col] = vals;
       } else {
-        this.filters.default[slice_id][col] = d3.merge([this.filters.default[slice_id][col], vals]);
+        filterSet[slice_id][col] = d3.merge([filterSet[slice_id][col], vals]);
       }
       this.refreshExcept(slice_id);
     },
     readFilters: function () {
       // Returns a list of human readable active filters
-      return JSON.stringify(this.filters.default, null, 4);
+      return JSON.stringify(this.filters, null, 4);
     },
     stopPeriodicRender: function () {
       if (this.refreshTimer) {
@@ -101,20 +108,22 @@ var Dashboard = function (dashboardData) {
         }
       });
     },
-    clearFilters: function (slice_id) {
-      delete this.filters.default[slice_id];
+    clearFilters: function (filter_set_name, slice_id) {
+      var filterSet = this.getFilterSet(filter_set_name);
+      delete filterSet[slice_id];
       this.refreshExcept(slice_id);
     },
-    removeFilter: function (slice_id, col, vals) {
-      if (slice_id in this.filters.default) {
-        if (col in this.filters.default[slice_id]) {
+    removeFilter: function (filter_set_name, slice_id, col, vals) {
+      var filterSet = this.getFilterSet(filter_set_name);
+      if (slice_id in filterSet) {
+        if (col in filterSet[slice_id]) {
           var a = [];
-          this.filters.default[slice_id][col].forEach(function (v) {
+          filterSet[slice_id][col].forEach(function (v) {
             if (vals.indexOf(v) < 0) {
               a.push(v);
             }
           });
-          this.filters.default[slice_id][col] = a;
+          filterSet[slice_id][col] = a;
         }
       }
       this.refreshExcept(slice_id);

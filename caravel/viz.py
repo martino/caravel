@@ -854,6 +854,12 @@ class BigNumberTotalViz(BaseViz):
             'subheader',
             'y_axis_format',
         )
+    },{
+        'label': 'Filter Options',
+        'fields': (
+            'filter_set',
+            'target_filter_set'
+        )
     },)
     form_overrides = {
         'y_axis_format': {
@@ -1096,6 +1102,12 @@ class DistributionPieViz(NVD3Viz):
             'limit',
             ('donut', 'show_legend'),
         )
+    }, {
+        'label': 'Filter Options',
+        'fields': (
+            'filter_set',
+            'target_filter_set'
+        )
     },)
 
     def query_obj(self):
@@ -1134,6 +1146,12 @@ class DistributionBarViz(DistributionPieViz):
             'row_limit',
             ('show_legend', 'bar_stacked'),
             ('y_axis_format', None),
+        )
+    }, {
+        'label': 'Filter Options',
+        'fields': (
+            'filter_set',
+            'target_filter_set'
         )
     },)
     form_overrides = {
@@ -1215,6 +1233,7 @@ class SDDistributionBarViz(DistributionBarViz):
             values=self.metrics)
         pt = pt.reindex(row.index)
         return pt
+
 
 class SunburstViz(BaseViz):
 

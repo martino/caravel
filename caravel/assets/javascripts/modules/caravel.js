@@ -207,11 +207,18 @@ var px = (function () {
       container: container,
       container_id: container_id,
       selector: selector,
+      getQueryFilters: function () {
+        var filter_set_name = (data.form_data.filter_set) ? data.form_data.filter_set : 'default';
+        return dashboard.getFilterSet(filter_set_name);
+      },
+      getTargetQueryFilters: function () {
+        return (data.form_data.target_filter_set) ? data.form_data.target_filter_set : 'default';
+      },
       querystring: function () {
         var parser = document.createElement('a');
         parser.href = data.json_endpoint;
         if (dashboard !== undefined) {
-          var flts = encodeURIComponent(JSON.stringify(dashboard.filters.default));
+          var flts = encodeURIComponent(JSON.stringify(this.getQueryFilters()));
           qrystr = parser.search + "&extra_filters=" + flts;
         } else if ($('#query').length === 0) {
           qrystr = parser.search;
@@ -346,22 +353,22 @@ var px = (function () {
       },
       addFilter: function (col, vals) {
         if (dashboard !== undefined) {
-          dashboard.addFilter(slice_id, col, vals);
+          dashboard.addFilter(this.getTargetQueryFilters(), slice_id, col, vals);
         }
       },
       setFilter: function (col, vals) {
         if (dashboard !== undefined) {
-          dashboard.setFilter(slice_id, col, vals);
+          dashboard.setFilter(this.getTargetQueryFilters(), slice_id, col, vals);
         }
       },
       clearFilter: function () {
         if (dashboard !== undefined) {
-          delete dashboard.clearFilter(slice_id);
+          dashboard.clearFilters(this.getTargetQueryFilters(), slice_id);
         }
       },
       removeFilter: function (col, vals) {
         if (dashboard !== undefined) {
-          delete dashboard.removeFilter(slice_id, col, vals);
+          dashboard.removeFilter(this.getTargetQueryFilters(), slice_id, col, vals);
         }
       }
     };

@@ -637,6 +637,14 @@ class FormFactory(object):
                 'Target label',
                 description="Target field label",
                 default="target"),
+            'filter_set': TextField(
+                'Filter set name',
+                description="Name of the filter set",
+                default="default"),
+            'target_filter_set': TextField(
+                'Target filter set name',
+                description="Name of the filter set to trigger filters",
+                default="default"),
         }
 
     @staticmethod
