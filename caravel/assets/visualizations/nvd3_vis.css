@@ -8,6 +8,7 @@ g.caravel path {
 }
 
 
-.nv-slice.opacified path {
+.nv-slice.opacified path,
+.nv-bar.opacified {
     fill-opacity: 0.1;
 }

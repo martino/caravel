@@ -227,6 +227,7 @@ function nvd3Vis(slice) {
 
           return chart;
         }, function () {
+          // TODO [martino] refactor the click handling
           switch (viz_type) {
             case 'pie':
               svg.selectAll('.nv-slice')
@@ -262,7 +263,28 @@ function nvd3Vis(slice) {
                 .on('click', function(d) {
                   var sliceValue = d.x
                     , filterName = payload.form_data.groupby[0];
-                  console.log(sliceValue, filterName);
+                  sliceValue = (typeof sliceValue === 'string') ? sliceValue : sliceValue.toString();
+                  if (selectedValues.length == 0) {
+                    // add filter
+                    selectedValues = [sliceValue];
+                    svg.selectAll(".nv-bar").attr("class", "nv-bar opacified");
+                    d3.select(this).attr("class", "nv-bar");
+                    slice.setFilter(filterName, selectedValues);
+                  } else {
+                    if (selectedValues[0] != sliceValue) {
+                      // remove and add filter
+                      slice.removeFilter(filterName, selectedValues);
+                      selectedValues = [sliceValue];
+                      svg.selectAll(".nv-bar").attr("class", "nv-bar opacified");
+                      d3.select(this).attr("class", "nv-bar");
+                      slice.setFilter(filterName, selectedValues);
+                    } else {
+                      // remove filter
+                      slice.removeFilter(filterName, selectedValues);
+                      selectedValues = [];
+                      svg.selectAll(".nv-bar").attr("class", "nv-bar");
+                    }
+                  }
                 });
               break;
           }
