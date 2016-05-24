@@ -7,6 +7,7 @@ d3.sankey = require('d3-sankey').sankey;
 
 function sankeyVis(slice) {
   var div = d3.select(slice.selector);
+  var selectedValues = {};
 
   var render = function () {
     var margin = {
@@ -57,11 +58,24 @@ function sankeyVis(slice) {
         .nodes(nodes)
         .links(links)
         .layout(32);
+      var noSelection = (Object.keys(selectedValues).length == 0);
 
       var link = svg.append("g").selectAll(".link")
         .data(links)
-      .enter().append("path")
-        .attr("class", "link")
+        .enter().append("path")
+        .attr("class", function (d) {
+          var baseClass =  "link";
+          if (noSelection) {
+            return baseClass;
+          } else {
+            if (selectedValues[json.form_data.groupby[0]].indexOf(d.source.name.replace(json.form_data.source_field_label, "")) != -1
+                && selectedValues[json.form_data.groupby[1]].indexOf(d.target.name.replace(json.form_data.target_field_label, "")) != -1) {
+              return baseClass + " selected";
+            } else {
+              return baseClass;
+            }
+          }
+        })
         .attr("d", path)
         .style("stroke-width", function (d) {
           return Math.max(1, d.dy);
@@ -154,13 +168,36 @@ function sankeyVis(slice) {
 
       function click(d) {
         var sourceValue = d.source.name.replace(json.form_data.source_field_label, "")
-          , targetValue = d.target.name.replace(json.form_data.target_field_label, "");
-        console.log("'"+json.form_data.source_field_label+"'");
-        console.log(d.source.name, json.form_data.source_field_label, sourceValue);
-        svg.selectAll(".link").attr("class", "link");
-        slice.setFilter(json.form_data.groupby[0], [sourceValue]);
-        slice.addFilter(json.form_data.groupby[1], [targetValue]);
-        d3.select(this).attr("class", "link selected");
+          , targetValue = d.target.name.replace(json.form_data.target_field_label, "")
+          , sourceField = json.form_data.groupby[0]
+          , targetField = json.form_data.groupby[1];
+
+        if (Object.keys(selectedValues).length == 0) {
+          // add filter
+          selectedValues[sourceField] = [sourceValue];
+          selectedValues[targetField] = [targetValue];
+
+          slice.setFilter(sourceField, selectedValues[sourceField], true);
+          slice.addFilter(targetField, selectedValues[targetField]);
+        } else {
+          if (selectedValues[sourceField] != sourceValue || selectedValues[targetField] != targetValue) {
+            // remove and add filter
+            slice.removeFilter(sourceField, selectedValues[sourceField], true);
+            slice.removeFilter(targetField, selectedValues[targetField], true);
+
+            selectedValues = {};
+            selectedValues[sourceField] = [sourceValue];
+            selectedValues[targetField] = [targetValue];
+
+            slice.setFilter(sourceField, selectedValues[sourceField], true);
+            slice.addFilter(targetField, selectedValues[targetField]);
+          } else {
+            // remove filter
+            slice.removeFilter(sourceField, selectedValues[sourceField], true);
+            slice.removeFilter(targetField, selectedValues[targetField]);
+            selectedValues = {}
+          }
+        }
       }
 
       function onmouseover(d) {
