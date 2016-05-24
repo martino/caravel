@@ -162,7 +162,6 @@ function sunburstVis(slice) {
             selectedValues = {}
           }
         }
-        console.log(selectedValues);
       };
 
 
