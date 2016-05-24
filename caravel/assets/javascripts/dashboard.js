@@ -46,10 +46,10 @@ var Dashboard = function (dashboardData) {
       }
       return this.filters[filter_set_name];
     },
-    setFilter: function (filter_set_name, slice_id, col, vals) {
-      this.addFilter(filter_set_name, slice_id, col, vals, false);
+    setFilter: function (filter_set_name, slice_id, col, vals, excludeRefresh) {
+      this.addFilter(filter_set_name, slice_id, col, vals, false, excludeRefresh);
     },
-    addFilter: function (filter_set_name, slice_id, col, vals, merge) {
+    addFilter: function (filter_set_name, slice_id, col, vals, merge, excludeRefresh) {
       var filterSet = this.getFilterSet(filter_set_name);
       if (merge === undefined) {
         merge = true;
@@ -62,8 +62,10 @@ var Dashboard = function (dashboardData) {
       } else {
         filterSet[slice_id][col] = d3.merge([filterSet[slice_id][col], vals]);
       }
-      // this.refreshExcept(slice_id);
-      this.refreshExceptNamespace(filter_set_name);
+      if (!excludeRefresh) {
+        // this.refreshExcept(slice_id);
+        this.refreshExceptNamespace(filter_set_name);
+      }
     },
     readFilters: function () {
       // Returns a list of human readable active filters
@@ -118,12 +120,15 @@ var Dashboard = function (dashboardData) {
         }
       });
     },
-    clearFilters: function (filter_set_name, slice_id) {
+    clearFilters: function (filter_set_name, slice_id, excludeRefresh) {
       var filterSet = this.getFilterSet(filter_set_name);
       delete filterSet[slice_id];
-      this.refreshExcept(slice_id);
+      if (!excludeRefresh) {
+        // this.refreshExcept(slice_id);
+        this.refreshExceptNamespace(filter_set_name);
+      }
     },
-    removeFilter: function (filter_set_name, slice_id, col, vals) {
+    removeFilter: function (filter_set_name, slice_id, col, vals, excludeRefresh) {
       var filterSet = this.getFilterSet(filter_set_name);
       if (slice_id in filterSet) {
         if (col in filterSet[slice_id]) {
@@ -136,7 +141,10 @@ var Dashboard = function (dashboardData) {
           filterSet[slice_id][col] = a;
         }
       }
-      this.refreshExcept(slice_id);
+      if (!excludeRefresh) {
+        // this.refreshExcept(slice_id);
+        this.refreshExceptNamespace(filter_set_name);
+      }
     },
     getSlice: function (slice_id) {
       slice_id = parseInt(slice_id, 10);

@@ -208,8 +208,17 @@ var px = (function () {
       container_id: container_id,
       selector: selector,
       getQueryFilters: function () {
-        var filter_set_name = (data.form_data.filter_set) ? data.form_data.filter_set : 'default';
-        return dashboard.getFilterSet(filter_set_name);
+        var filter_set_name = (data.form_data.filter_set) ? data.form_data.filter_set : 'default'
+          , filters = dashboard.getFilterSet(filter_set_name)
+          , cleanedFilter = {};
+
+        Object.keys(filters).map(function(slice_id) {
+          if (slice_id.toString() !== data.slice_id.toString()) {
+            cleanedFilter[slice_id] = filters[slice_id];
+          }
+        });
+        
+        return cleanedFilter;
       },
       getTargetQueryFilters: function () {
         var all_filters = (data.form_data.target_filter_set) ? data.form_data.target_filter_set : 'default'
@@ -219,7 +228,7 @@ var px = (function () {
         var parser = document.createElement('a');
         parser.href = data.json_endpoint;
         if (dashboard !== undefined) {
-          var flts = encodeURIComponent(JSON.stringify(this.getQueryFilters()));
+          var flts = encodeURIComponent(JSON.stringify(this.getQueryFilters(true)));
           qrystr = parser.search + "&extra_filters=" + flts;
         } else if ($('#query').length === 0) {
           qrystr = parser.search;
@@ -352,31 +361,35 @@ var px = (function () {
         this.viz.render();
         this.viz.resize();
       },
-      addFilter: function (col, vals) {
+      addFilter: function (col, vals, excludeRefresh) {
+        excludeRefresh = (excludeRefresh === undefined) ? false : excludeRefresh;
         if (dashboard !== undefined) {
           this.getTargetQueryFilters().map(function (filter) {
-            dashboard.addFilter(filter, slice_id, col, vals);
+            dashboard.addFilter(filter, slice_id, col, vals, excludeRefresh);
           });
         }
       },
-      setFilter: function (col, vals) {
+      setFilter: function (col, vals, excludeRefresh) {
+        excludeRefresh = (excludeRefresh === undefined) ? false : excludeRefresh;
         if (dashboard !== undefined) {
           this.getTargetQueryFilters().map(function (filter) {
-            dashboard.setFilter(filter, slice_id, col, vals);
+            dashboard.setFilter(filter, slice_id, col, vals, excludeRefresh);
           });
         }
       },
-      clearFilter: function () {
+      clearFilter: function (excludeRefresh) {
+        excludeRefresh = (excludeRefresh === undefined) ? false : excludeRefresh;
         if (dashboard !== undefined) {
           this.getTargetQueryFilters().map(function (filter) {
-            dashboard.clearFilters(filter, slice_id);
+            dashboard.clearFilters(filter, slice_id, excludeRefresh);
           });
         }
       },
-      removeFilter: function (col, vals) {
+      removeFilter: function (col, vals, excludeRefresh) {
+        excludeRefresh = (excludeRefresh === undefined) ? false : excludeRefresh;
         if (dashboard !== undefined) {
           this.getTargetQueryFilters().map(function (filter) {
-            dashboard.removeFilter(filter, slice_id, col, vals);
+            dashboard.removeFilter(filter, slice_id, col, vals, excludeRefresh);
           });
         }
       }
