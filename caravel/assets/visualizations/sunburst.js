@@ -7,6 +7,7 @@ require('./sunburst.css');
 // Modified from http://bl.ocks.org/kerryrodden/7090426
 function sunburstVis(slice) {
   var container = d3.select(slice.selector);
+  var selectedValues = {};
 
   var render = function () {
     // vars with shared scope within this function
@@ -18,6 +19,7 @@ function sunburstVis(slice) {
     var visHeight        = containerHeight - margin.top - margin.bottom - breadcrumbHeight;
     var radius           = Math.min(visWidth, visHeight) / 2;
     var colorByCategory  = true; // color by category if primary/secondary metrics match
+    var groupBy          = [];
 
     var maxBreadcrumbs, breadcrumbDims, // set based on data
         totalSize, // total size of all segments; set after loading the data.
@@ -57,6 +59,8 @@ function sunburstVis(slice) {
         slice.error(error.responseText);
         return '';
       }
+      groupBy = rawData.form_data.groupby;
+
       createBreadcrumbs(rawData);
       createVisualization(rawData);
 
@@ -80,6 +84,20 @@ function sunburstVis(slice) {
 
       breadcrumbs.append("svg:text")
         .attr("class", "end-label");
+    }
+
+    function computeOpacity(d) {
+      var noSelection = (Object.keys(selectedValues).length == 0)
+        , defaultOpacity = 1;
+      if (noSelection) {
+        return defaultOpacity
+      } else {
+        if (selectedValues[groupBy[d.depth - 1]] == d.name) {
+          return defaultOpacity;
+        } else {
+          return defaultOpacity / 4;
+        }
+      }
     }
 
     // Main function to draw and set up the visualization, once we have the data.
@@ -123,6 +141,31 @@ function sunburstVis(slice) {
           .range(["#00D1C1", "white", "#FFB400"]);
       }
 
+      var click = function (d) {
+        var sliceValue = d.name
+          , filterName = groupBy[d.depth - 1];
+
+        if (Object.keys(selectedValues).length == 0) {
+          // add filter
+          selectedValues[filterName] = [sliceValue];
+          slice.setFilter(filterName, selectedValues[filterName]);
+        } else {
+          if (selectedValues[filterName] != sliceValue) {
+            // remove and add filter
+            slice.removeFilter(filterName, selectedValues[filterName], true);
+            selectedValues = {};
+            selectedValues[filterName] = [sliceValue];
+            slice.setFilter(filterName, selectedValues[filterName]);
+          } else {
+            // remove filter
+            slice.removeFilter(filterName, selectedValues[filterName]);
+            selectedValues = {}
+          }
+        }
+        console.log(selectedValues);
+      };
+
+
       var path = arcs.data([tree]).selectAll("path")
         .data(nodes)
        .enter().append("svg:path")
@@ -134,8 +177,11 @@ function sunburstVis(slice) {
         .style("fill", function (d) {
           return colorByCategory ? px.color.category21(d.name) : colorScale(d.m2 / d.m1);
         })
-        .style("opacity", 1)
-        .on("mouseenter", mouseenter);
+        .style("opacity", function (d) {
+          return computeOpacity(d);
+        })
+        .on("mouseenter", mouseenter)
+        .on("click", click);
 
       // Get total size of the tree = value of root node from partition.
       totalSize = path.node().__data__.value;
@@ -217,7 +263,9 @@ function sunburstVis(slice) {
       arcs.selectAll("path")
         .transition()
         .duration(200)
-        .style("opacity", 1)
+        .style("opacity", function (d) {
+          return computeOpacity(d);
+        })
         .style("stroke", null)
         .style("stroke-width", null)
         .each("end", function () {

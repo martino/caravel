@@ -217,7 +217,6 @@ var px = (function () {
             cleanedFilter[slice_id] = filters[slice_id];
           }
         });
-        
         return cleanedFilter;
       },
       getTargetQueryFilters: function () {
