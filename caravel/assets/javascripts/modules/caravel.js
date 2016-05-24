@@ -212,7 +212,8 @@ var px = (function () {
         return dashboard.getFilterSet(filter_set_name);
       },
       getTargetQueryFilters: function () {
-        return (data.form_data.target_filter_set) ? data.form_data.target_filter_set : 'default';
+        var all_filters = (data.form_data.target_filter_set) ? data.form_data.target_filter_set : 'default'
+        return all_filters.split(',');
       },
       querystring: function () {
         var parser = document.createElement('a');
@@ -353,22 +354,30 @@ var px = (function () {
       },
       addFilter: function (col, vals) {
         if (dashboard !== undefined) {
-          dashboard.addFilter(this.getTargetQueryFilters(), slice_id, col, vals);
+          this.getTargetQueryFilters().map(function (filter) {
+            dashboard.addFilter(filter, slice_id, col, vals);
+          });
         }
       },
       setFilter: function (col, vals) {
         if (dashboard !== undefined) {
-          dashboard.setFilter(this.getTargetQueryFilters(), slice_id, col, vals);
+          this.getTargetQueryFilters().map(function (filter) {
+            dashboard.setFilter(filter, slice_id, col, vals);
+          });
         }
       },
       clearFilter: function () {
         if (dashboard !== undefined) {
-          dashboard.clearFilters(this.getTargetQueryFilters(), slice_id);
+          this.getTargetQueryFilters().map(function (filter) {
+            dashboard.clearFilters(filter, slice_id);
+          });
         }
       },
       removeFilter: function (col, vals) {
         if (dashboard !== undefined) {
-          dashboard.removeFilter(this.getTargetQueryFilters(), slice_id, col, vals);
+          this.getTargetQueryFilters().map(function (filter) {
+            dashboard.removeFilter(filter, slice_id, col, vals);
+          });
         }
       }
     };
