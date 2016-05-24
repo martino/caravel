@@ -62,7 +62,8 @@ var Dashboard = function (dashboardData) {
       } else {
         filterSet[slice_id][col] = d3.merge([filterSet[slice_id][col], vals]);
       }
-      this.refreshExcept(slice_id);
+      // this.refreshExcept(slice_id);
+      this.refreshExceptNamespace(filter_set_name);
     },
     readFilters: function () {
       // Returns a list of human readable active filters
@@ -104,6 +105,15 @@ var Dashboard = function (dashboardData) {
       var immune = this.metadata.filter_immune_slices || [];
       this.slices.forEach(function (slice) {
         if (slice.data.slice_id !== slice_id && immune.indexOf(slice.data.slice_id) === -1) {
+          slice.render();
+        }
+      });
+    },
+    refreshExceptNamespace: function (namespace) {
+      var immune = this.metadata.filter_immune_slices || [];
+      this.slices.forEach(function (slice) {
+        var sliceNamespace = (slice.data.form_data.filter_set) ? slice.data.form_data.filter_set : 'default';
+        if (sliceNamespace === namespace && immune.indexOf(slice.data.slice_id) === -1) {
           slice.render();
         }
       });
