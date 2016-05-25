@@ -855,7 +855,7 @@ class BigNumberTotalViz(BaseViz):
             'subheader',
             'y_axis_format',
         )
-    },{
+    }, {
         'label': 'Filter Options',
         'fields': (
             'filter_set',
@@ -1695,7 +1695,14 @@ class SDCompanies(BaseViz):
             'groupby',
             'metric',
         )
-    },)
+     }, {
+         'label': 'Filter Options',
+         'fields': (
+             'filter_set',
+             'target_filter_set'
+         )
+     },
+    )
     form_overrides = {
         'groupby': {
             'label': 'Filter fields',
@@ -1755,7 +1762,14 @@ class SDPeople(BaseViz):
             'groupby',
             'metric',
         )
-    },)
+    }, {
+         'label': 'Filter Options',
+         'fields': (
+             'filter_set',
+             'target_filter_set'
+         )
+     },
+    )
     form_overrides = {
         'groupby': {
             'label': 'Filter fields',

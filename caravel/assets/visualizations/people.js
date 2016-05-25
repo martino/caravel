@@ -8,7 +8,7 @@ function peopleWidget(slice) {
         var peopleData = payload.data.atokaData.map(function(data) {
           return '<li>' + data.name + '</li>';
         });
-        slice.container.html('<div>people</div><ul>' + peopleData.join('') + '</ul>');
+        slice.container.html('<ul>' + peopleData.join('') + '</ul>');
         slice.done();
       })
       .fail(function (xhr) {

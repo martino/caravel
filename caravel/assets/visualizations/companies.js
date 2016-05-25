@@ -20,7 +20,7 @@ function companiesWidget(slice) {
 
           return '<li>' + atokaLink + '<br/>' + website + ' ' + lastRevenue + '</li>';
         });
-        slice.container.html('<div>companies</div><ul>' + companiesData.join('') + '</ul>');
+        slice.container.html('<ul>' + companiesData.join('') + '</ul>');
         slice.done();
       })
       .fail(function (xhr) {
