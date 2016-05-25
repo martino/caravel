@@ -15,10 +15,28 @@ require('../node_modules/gridster/dist/jquery.gridster.min.js');
 
 require('../stylesheets/dashboard.css');
 
+var getUrlParameterByName = function (name, url) {
+    if (!url) url = window.location.href;
+    name = name.replace(/[\[\]]/g, "\\$&");
+    var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+        results = regex.exec(url);
+    if (!results) return null;
+    if (!results[2]) return '';
+    return decodeURIComponent(results[2].replace(/\+/g, " "));
+};
+
 var Dashboard = function (dashboardData) {
   var dashboard = $.extend(dashboardData, {
     filters: {'default': {}},
     init: function () {
+      var urlFilters =  getUrlParameterByName('filters');
+      if (urlFilters !== null) {
+        this.filters = JSON.parse(urlFilters);
+
+        if (!this.filters.hasOwnProperty('default')) {
+          this.filters.default = {};
+        }
+      }
       this.initDashboardView();
       this.firstLoad = true;
       px.initFavStars();
@@ -70,6 +88,9 @@ var Dashboard = function (dashboardData) {
     readFilters: function () {
       // Returns a list of human readable active filters
       return JSON.stringify(this.filters, null, 4);
+    },
+    getDashboardUrl: function () {
+      return location.origin + location.pathname + encodeURI("?filters=" + JSON.stringify(this.filters));
     },
     stopPeriodicRender: function () {
       if (this.refreshTimer) {
@@ -252,6 +273,12 @@ var Dashboard = function (dashboardData) {
         showModal({
           title: "<span class='fa fa-info-circle'></span> Current Global Filters",
           body: "The following global filters are currently applied:<br/>" + dashboard.readFilters()
+        });
+      });
+      $('#share').click(function () {
+        showModal({
+          title: "<span class='fa fa-info-circle'></span> Share this dashboard with this filters",
+          body: "With <a target='_blank' href='" + dashboard.getDashboardUrl() + "'>this link</a> you can share this dashboard with applied filters"
         });
       });
       $("#refresh_dash_interval").on("change", function () {
