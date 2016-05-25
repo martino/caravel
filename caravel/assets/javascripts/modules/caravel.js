@@ -14,6 +14,7 @@ var sourceMap = {
   compare: 'nvd3_vis.js',
   dist_bar: 'nvd3_vis.js',
   sd_dist_bar: 'nvd3_vis.js',
+  sd_dist_bar_ratio: 'nvd3_vis.js',
   directed_force: 'directed_force.js',
   filter_box: 'filter_box.js',
   heatmap: 'heatmap.js',

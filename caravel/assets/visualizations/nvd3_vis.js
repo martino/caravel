@@ -68,6 +68,7 @@ function nvd3Vis(slice) {
                 break;
 
               case 'sd_dist_bar':
+              case 'sd_dist_bar_ratio':
                 chart = nv.models.multiBarChart()
                     .showControls(false) //Allow user to switch between 'Grouped' and 'Stacked' mode.
                     .reduceXTicks(false)

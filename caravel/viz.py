@@ -1224,15 +1224,44 @@ class SDDistributionBarViz(DistributionBarViz):
     def get_df(self, query_obj=None):
         df = super(DistributionPieViz, self).get_df(query_obj)  # noqa
         fd = self.form_data
-
         row = df.groupby(self.groupby).sum()[self.metrics[0]].copy()
         # row.sort(ascending=False)
         columns = fd.get('columns') or []
         pt = df.pivot_table(
             index=self.groupby,
             columns=columns,
-            values=self.metrics)
+            values=self.metrics,
+        )
         pt = pt.reindex(row.index)
+        return pt
+
+
+class SDDistributionRatioBarViz(DistributionBarViz):
+    verbose_name = "SD Distribution Ratio- Bar Chart"
+    viz_type = "sd_dist_bar_ratio"
+
+    def get_df(self, query_obj=None):
+        df = super(DistributionPieViz, self).get_df(query_obj)  # noqa
+        fd = self.form_data
+        columns = fd.get('columns') or []
+        tabellina = df.groupby([self.groupby[0], columns[0]]).sum()[self.metrics[0]].copy().reset_index()
+        # TODO fix this shit in a more pandas way
+        grouped_df = pd.DataFrame([
+            {
+                self.groupby[0]: f,
+                columns[0]: True,
+                self.metrics[0]: (tabellina[(tabellina[self.groupby[0]] == f) & (tabellina[columns[0]])][self.metrics[0]].values[0]
+                             / float(sum(tabellina[tabellina[self.groupby[0]] == f][self.metrics[0]]))) * 100
+            }
+            for f in set(tabellina[self.groupby[0]])
+        ])
+        # ['pg_is_allianz'] ['pg_cod_revenue'] ['count_distinct_pg']
+        # print(columns, self.groupby, self.metrics)
+        pt = grouped_df.pivot_table(
+            index=self.groupby,
+            columns=columns,
+            values=self.metrics,
+        )
         return pt
 
 
@@ -1978,6 +2007,7 @@ viz_types_list = [
     SDSankeyViz,
     CalHeatmapViz,
     HorizonViz,
+    SDDistributionRatioBarViz,
 ]
 
 viz_types = OrderedDict([(v.viz_type, v) for v in viz_types_list
