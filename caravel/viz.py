@@ -1246,15 +1246,29 @@ class SDDistributionRatioBarViz(DistributionBarViz):
         columns = fd.get('columns') or []
         tabellina = df.groupby([self.groupby[0], columns[0]]).sum()[self.metrics[0]].copy().reset_index()
         # TODO fix this shit in a more pandas way
-        grouped_df = pd.DataFrame([
-            {
+        computed_data = []
+        for f in set(tabellina[self.groupby[0]]):
+            try:
+                total_data = float(sum(tabellina[tabellina[self.groupby[0]] == f][self.metrics[0]]))
+            except IndexError:
+                total_data = 0
+            try:
+                allianz_data = tabellina[(tabellina[self.groupby[0]] == f) & (tabellina[columns[0]])][self.metrics[0]].values[0]
+            except IndexError:
+                allianz_data = 0
+
+            if total_data:
+                computed_metric = (allianz_data / total_data) * 100
+            else:
+                computed_metric = 0
+
+            computed_data.append({
                 self.groupby[0]: f,
                 columns[0]: True,
-                self.metrics[0]: (tabellina[(tabellina[self.groupby[0]] == f) & (tabellina[columns[0]])][self.metrics[0]].values[0]
-                             / float(sum(tabellina[tabellina[self.groupby[0]] == f][self.metrics[0]]))) * 100
-            }
-            for f in set(tabellina[self.groupby[0]])
-        ])
+                self.metrics[0]: computed_metric
+            })
+        grouped_df = pd.DataFrame(computed_data)
+
         # ['pg_is_allianz'] ['pg_cod_revenue'] ['count_distinct_pg']
         # print(columns, self.groupby, self.metrics)
         pt = grouped_df.pivot_table(
