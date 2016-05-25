@@ -234,7 +234,7 @@ function nvd3Vis(slice) {
                 if (noSelection) {
                   return defaultValue;
                 } else {
-                  if (selectedValues.indexOf(d.data.x) === -1) {
+                  if (selectedValues.indexOf(d.data.x.toString()) === -1) {
                     return defaultValue + " opacified";
                   } else {
                     return defaultValue;
@@ -282,7 +282,7 @@ function nvd3Vis(slice) {
             case 'pie':
               svg.selectAll('.nv-slice')
                 .on('click', function(d) {
-                  var sliceValue = d.data.x
+                  var sliceValue = d.data.x.toString()
                     , filterName = payload.form_data.groupby[0];
                   handlingSelectedValues(filterName, sliceValue);
                 });
