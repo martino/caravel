@@ -25,3 +25,4 @@ app.db
 *.js.map
 node_modules
 npm-debug.log
+static/custom
