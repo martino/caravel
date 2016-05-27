@@ -26,7 +26,7 @@ function companiesWidget(slice) {
 
           return '<li style="' + liStyle + '">' + isStarred + atokaLink + '<br/>' + website + ' ' + lastRevenue + '</li>';
         });
-        slice.container.html('<ul style="list-style: none">' + companiesData.join('') + '</ul>');
+        slice.container.html('<ul style="list-style:none;padding:15px;">' + companiesData.join('') + '</ul>');
         slice.done();
       })
       .fail(function (xhr) {
