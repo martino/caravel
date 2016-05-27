@@ -25,7 +25,8 @@ from pandas.io.json import dumps
 from six import string_types
 from werkzeug.datastructures import ImmutableMultiDict
 from werkzeug.urls import Href
-from dateutil import relativedelta as rdelta
+from dateutil import relativedelta as rdelta, parser
+
 
 from caravel import app, utils, cache
 from caravel.forms import FormFactory
@@ -1693,7 +1694,7 @@ class SDCompanies(BaseViz):
     """A filter to show companies data"""
 
     viz_type = "companies"
-    verbose_name = "Companies"
+    verbose_name = "Atoka companies"
     is_timeseries = False
     credits = '<a href="https://spaziodati.eu">Spaziodati</a>'
     fieldsets = ({
@@ -1704,7 +1705,7 @@ class SDCompanies(BaseViz):
              'starred_label',
              'atoka_results_limit',
          )
-     },{
+     }, {
          'label': 'Filter Options',
          'fields': (
              'filter_set',
@@ -1745,7 +1746,7 @@ class SDCompanies(BaseViz):
         if compute_is_starred:
             is_starred = [row[1] for row in df.itertuples(index=False)]
 
-        atoka_api_url = 'https://api-u.spaziodati.eu/v2/companies?token={}&packages=economics,web&limit=30&ids={}'
+        atoka_api_url = 'https://api-u.spaziodati.eu/v2/companies?token={}&packages=economics,web,socials&limit=30&ids={}'
         req_url = atoka_api_url.format(token, ','.join(all_achenes))
         response = requests.get(req_url)
         companies_data = response.json().get('items', [])
@@ -1757,7 +1758,9 @@ class SDCompanies(BaseViz):
                 'atokaUrl': 'http://atoka.io/azienda/-/{}/'.format(company.get('id')),
                 'website': company.get('web', {}).get('websites', [{}])[0].get('url', '-'),
                 'lastRevenue': company.get('economics').get('balanceSheets', [{}])[0].get('revenue', '-'),
-                'lastYear': company.get('economics').get('balanceSheets', [{}])[0].get('year', '-')
+                'lastYear': company.get('economics').get('balanceSheets', [{}])[0].get('year', '-'),
+                'facebook': company.get('socials', {}).get('facebook', [{}])[0].get('url', ''),
+                'linkedin': company.get('socials', {}).get('linkedin', [{}])[0].get('url', ''),
             }
             if compute_is_starred:
                 company_data['isStarred'] = is_starred[i]
@@ -1774,22 +1777,25 @@ class SDPeople(BaseViz):
     """A filter to show companies data"""
 
     viz_type = "people"
-    verbose_name = "People"
+    verbose_name = "Atoka people"
     is_timeseries = False
     credits = '<a href="https://spaziodati.eu">Spaziodati</a>'
-    fieldsets = ({
-        'label': None,
-        'fields': (
-            'groupby',
-            'metric',
-        )
-    }, {
-         'label': 'Filter Options',
-         'fields': (
-             'filter_set',
-             'target_filter_set'
-         )
-     },
+    fieldsets = (
+        {
+            'label': 'Filter settings',
+            'fields': (
+                'achene_field',
+                'is_starred',
+                'starred_label',
+                'atoka_results_limit',
+            )
+        }, {
+            'label': 'Filter Options',
+            'fields': (
+                'filter_set',
+                'target_filter_set'
+            )
+        },
     )
     form_overrides = {
         'groupby': {
@@ -1799,35 +1805,72 @@ class SDPeople(BaseViz):
     }
 
     def query_obj(self):
-        qry = super(SDPeople, self).query_obj()
-        groupby = self.form_data['groupby']
-        if len(groupby) < 1:
+        achene_field = self.form_data['achene_field']
+        if not achene_field:
             raise Exception("Pick at least one filter field")
-        qry['metrics'] = [
-            self.form_data['metric']]
+
+        is_starred = self.form_data['is_starred']
+        self.form_data['groupby'] = [achene_field, is_starred]
+        self.form_data['limit'] = self.form_data['atoka_results_limit']
+
+        qry = super(SDPeople, self).query_obj()
         return qry
 
     def get_data(self):
         qry = self.query_obj()
-        filters = [g for g in qry['groupby']]
         d = {}
-
         token = config.get("ATOKA_TOKEN")
         if token is None:
             raise Exception("Set your atoka token in the config file")
+        compute_is_starred = self.form_data['is_starred']
 
-        for flt in filters:
-            qry['groupby'] = [flt]
-            df = super(SDPeople, self).get_df(qry)
-            all_achenes = [row[0] for row in df.itertuples(index=False)][:20]
-            atoka_api_url = 'https://api-u.spaziodati.eu/v2/people?token={}&packages=base&limit=30&ids={}'
-            req_url = atoka_api_url.format(token, ','.join(all_achenes))
-            response = requests.get(req_url)
-            people_data = response.json().get('items', [])
-            d['atokaData'] = [
-                {'name': person.get('name')}
-                for person in people_data
+        df = super(SDPeople, self).get_df(qry)
+        all_achenes = [row[0] for row in df.itertuples(index=False)]
+        is_starred = []
+        if compute_is_starred:
+            is_starred = [row[1] for row in df.itertuples(index=False)]
+
+        atoka_api_url = 'https://api-u.spaziodati.eu/v2/people?token={}&packages=base,companies&limit=30&ids={}'
+        req_url = atoka_api_url.format(token, ','.join(all_achenes))
+        print(req_url)
+        response = requests.get(req_url)
+        people_data = response.json().get('items', [])
+        atoka_data = []
+        i = 0
+
+        for person in people_data:
+            if person.get('id') is None:
+                continue
+            base_pkg = person.get('base', {})
+            companies_pkg = person.get('companies', {})
+            person_companies = []
+            person_data = {
+                'name': person.get('name'),
+                'atokaUrl': 'http://atoka.io/people/-/{}/'.format(person.get('id')),
+                'municipality': base_pkg.get('residenceAddress', {}).get('municipality'),
+                'province': base_pkg.get('residenceAddress', {}).get('provinceCode')
+            }
+            if base_pkg.get('birthDate'):
+                num_years = int((datetime.now() - parser.parse(base_pkg.get('birthDate'))).days / 365.25)
+                person_data['age'] = num_years
+
+            person_data['roles'] = [
+                {
+                  'isCeo': 'CEO' in role_company['cLevels'],
+                  'isCfo': 'CFO' in role_company['cLevels'],
+                  'companyName': role_company.get('legalName', '-'),
+                  'atokaUrl': 'http://atoka.io/azienda/-/{}/'.format(role_company.get('id'))
+                }
+                for role_company in companies_pkg.get('items', [])
+                if 'CEO' in role_company.get('cLevels', []) or 'CFO' in role_company.get('cLevels', [])
             ]
+
+            if compute_is_starred:
+                person_data['isStarred'] = is_starred[i]
+                i += 1
+            atoka_data.append(person_data)
+        d['atokaData'] = atoka_data
+        d['starredLabel'] = self.form_data['starred_label']
         return d
 
 
