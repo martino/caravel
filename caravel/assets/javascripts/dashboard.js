@@ -179,7 +179,7 @@ var Dashboard = function (dashboardData) {
       dashboard = this;
       var gridster = $(".gridster ul").gridster({
         autogrow_cols: true,
-        widget_margins: [10, 10],
+        widget_margins: [5, 5],
         widget_base_dimensions: [95, 95],
         draggable: {
           handle: '.drag'

@@ -1697,12 +1697,14 @@ class SDCompanies(BaseViz):
     is_timeseries = False
     credits = '<a href="https://spaziodati.eu">Spaziodati</a>'
     fieldsets = ({
-        'label': None,
-        'fields': (
-            'groupby',
-            'metric',
-        )
-     }, {
+         'label': 'Filter settings',
+         'fields': (
+             'achene_field',
+             'is_starred',
+             'starred_label',
+             'atoka_results_limit',
+         )
+     },{
          'label': 'Filter Options',
          'fields': (
              'filter_set',
@@ -1718,40 +1720,52 @@ class SDCompanies(BaseViz):
     }
 
     def query_obj(self):
-        qry = super(SDCompanies, self).query_obj()
-        groupby = self.form_data['groupby']
-        if len(groupby) < 1:
+        achene_field = self.form_data['achene_field']
+        if not achene_field:
             raise Exception("Pick at least one filter field")
-        qry['metrics'] = [
-            self.form_data['metric']]
+
+        is_starred = self.form_data['is_starred']
+        self.form_data['groupby'] = [achene_field, is_starred]
+        self.form_data['limit'] = self.form_data['atoka_results_limit']
+
+        qry = super(SDCompanies, self).query_obj()
         return qry
 
     def get_data(self):
         qry = self.query_obj()
-        filters = [g for g in qry['groupby']]
         d = {}
         token = config.get("ATOKA_TOKEN")
         if token is None:
             raise Exception("Set your atoka token in the config file")
+        compute_is_starred = self.form_data['is_starred']
 
-        for flt in filters:
-            qry['groupby'] = [flt]
-            df = super(SDCompanies, self).get_df(qry)
-            all_achenes = [row[0] for row in df.itertuples(index=False)][:20]
-            atoka_api_url = 'https://api-u.spaziodati.eu/v2/companies?token={}&packages=economics,web&limit=30&ids={}'
-            req_url = atoka_api_url.format(token, ','.join(all_achenes))
-            response = requests.get(req_url)
-            companies_data = response.json().get('items', [])
-            d['atokaData'] = [
-                {
-                    'name': company.get('name'),
-                    'atokaUrl': 'http://atoka.io/azienda/-/{}/'.format(company.get('id')),
-                    'website': company.get('web', {}).get('websites', [{}])[0].get('url', '-'),
-                    'lastRevenue': company.get('economics').get('balanceSheets', [{}])[0].get('revenue', '-'),
-                    'lastYear': company.get('economics').get('balanceSheets', [{}])[0].get('year', '-')
-                }
-                for company in companies_data
-            ]
+        df = super(SDCompanies, self).get_df(qry)
+        all_achenes = [row[0] for row in df.itertuples(index=False)]
+        is_starred = []
+        if compute_is_starred:
+            is_starred = [row[1] for row in df.itertuples(index=False)]
+
+        atoka_api_url = 'https://api-u.spaziodati.eu/v2/companies?token={}&packages=economics,web&limit=30&ids={}'
+        req_url = atoka_api_url.format(token, ','.join(all_achenes))
+        response = requests.get(req_url)
+        companies_data = response.json().get('items', [])
+        atoka_data = []
+        i = 0
+        for company in companies_data:
+            company_data = {
+                'name': company.get('name'),
+                'atokaUrl': 'http://atoka.io/azienda/-/{}/'.format(company.get('id')),
+                'website': company.get('web', {}).get('websites', [{}])[0].get('url', '-'),
+                'lastRevenue': company.get('economics').get('balanceSheets', [{}])[0].get('revenue', '-'),
+                'lastYear': company.get('economics').get('balanceSheets', [{}])[0].get('year', '-')
+            }
+            if compute_is_starred:
+                company_data['isStarred'] = is_starred[i]
+                i += 1
+            atoka_data.append(company_data)
+
+        d['atokaData'] = atoka_data
+        d['starredLabel'] = self.form_data['starred_label']
         return d
 
 

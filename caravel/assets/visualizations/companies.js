@@ -8,7 +8,9 @@ function companiesWidget(slice) {
         var companiesData = payload.data.atokaData.map(function(data) {
           var website = ''
             , lastRevenue = ''
-            , atokaLink = '<a target="_blank" href="' + data.atokaUrl + '">' + data.name + '</a>';
+            , isStarred = ''
+            , atokaLink = '<a target="_blank" href="' + data.atokaUrl + '">' + data.name + '</a>'
+            , liStyle = 'margin-bottom: 12px';
 
           if (data.website !== '-') {
               website = '<a target="_blank" href="' + data.website + '">Sito web</a>'
@@ -18,9 +20,13 @@ function companiesWidget(slice) {
             lastRevenue = 'ultimi ricavi ' + data.lastRevenue + '(' + data.lastYear + ')';
           }
 
-          return '<li>' + atokaLink + '<br/>' + website + ' ' + lastRevenue + '</li>';
+          if (data.isStarred) {
+            isStarred = '<i title="' + payload.data.starredLabel + '" class="fa fa-star-o" aria-hidden="true"></i> ';
+          }
+
+          return '<li style="' + liStyle + '">' + isStarred + atokaLink + '<br/>' + website + ' ' + lastRevenue + '</li>';
         });
-        slice.container.html('<ul>' + companiesData.join('') + '</ul>');
+        slice.container.html('<ul style="list-style: none">' + companiesData.join('') + '</ul>');
         slice.done();
       })
       .fail(function (xhr) {

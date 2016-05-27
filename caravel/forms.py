@@ -645,6 +645,22 @@ class FormFactory(object):
                 'Target filter set name',
                 description="Name of the filter set to trigger filters",
                 default="default"),
+            'achene_field': SelectField(
+                'Achene field',
+                choices=self.choicify(datasource.groupby_column_names),
+                description="Achene field"),
+            'is_starred': SelectField(
+                'Is starred field',
+                choices=self.choicify(datasource.groupby_column_names),
+                description="Is starred field"),
+            'starred_label': TextField(
+                'Label for the starred elements',
+                description="Label for the starred elements",
+                default=""),
+            'atoka_results_limit': IntegerField(
+                'Maximum results from atoka',
+                default=20
+            )
         }
 
     @staticmethod
