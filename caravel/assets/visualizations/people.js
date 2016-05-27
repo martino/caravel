@@ -9,7 +9,7 @@ function peopleWidget(slice) {
 
         } else {
           var peopleData = payload.data.atokaData.map(function(data) {
-            var liStyle = 'margin-bottom: 12px'
+            var liStyle = 'margin-bottom: 12px;border-bottom: 1px dashed gainsboro;'
               , isStarred = ''
               , atokaLink = '<a target="_blank" href="' + data.atokaUrl + '">' + data.name + '</a>'
               , birthInfo = ''

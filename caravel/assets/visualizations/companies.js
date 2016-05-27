@@ -11,7 +11,7 @@ function companiesWidget(slice) {
             , isStarred = ''
             , social = ' '
             , atokaLink = '<a target="_blank" href="' + data.atokaUrl + '">' + data.name + '</a>'
-            , liStyle = 'margin-bottom: 12px';
+            , liStyle = 'margin-bottom: 12px;border-bottom: 1px dashed gainsboro;';
 
           if (data.website !== '-') {
               website = '<a target="_blank" href="' + data.website + '"><i class="fa fa-globe" aria-hidden="true"></i> Sito web</a>'
