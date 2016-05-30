@@ -150,16 +150,16 @@ function sunburstVis(slice) {
           selectedValues[filterName] = [sliceValue];
           slice.setFilter(filterName, selectedValues[filterName]);
         } else {
-          if (selectedValues[filterName] != sliceValue) {
-            // remove and add filter
-            slice.removeFilter(filterName, selectedValues[filterName], true);
+          var currentValue = selectedValues[filterName];
+          if (currentValue !== undefined && currentValue[0] === sliceValue) {
+            // the filter is the same, remove it
+            slice.removeFilter(filterName, selectedValues[filterName]);
+            selectedValues = {};
+          } else {
+            /git/ reset filters with the new value
             selectedValues = {};
             selectedValues[filterName] = [sliceValue];
             slice.setFilter(filterName, selectedValues[filterName]);
-          } else {
-            // remove filter
-            slice.removeFilter(filterName, selectedValues[filterName]);
-            selectedValues = {}
           }
         }
       };
