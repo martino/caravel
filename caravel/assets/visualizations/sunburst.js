@@ -156,7 +156,7 @@ function sunburstVis(slice) {
             slice.removeFilter(filterName, selectedValues[filterName]);
             selectedValues = {};
           } else {
-            /git/ reset filters with the new value
+            // reset filters with the new value
             selectedValues = {};
             selectedValues[filterName] = [sliceValue];
             slice.setFilter(filterName, selectedValues[filterName]);
