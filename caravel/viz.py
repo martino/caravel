@@ -1757,8 +1757,8 @@ class SDCompanies(BaseViz):
                 'name': company.get('name'),
                 'atokaUrl': 'http://atoka.io/azienda/-/{}/'.format(company.get('id')),
                 'website': company.get('web', {}).get('websites', [{}])[0].get('url', '-'),
-                'lastRevenue': company.get('economics').get('balanceSheets', [{}])[0].get('revenue', '-'),
-                'lastYear': company.get('economics').get('balanceSheets', [{}])[0].get('year', '-'),
+                'lastRevenue': company.get('economics', {}).get('balanceSheets', [{}])[0].get('revenue', '-'),
+                'lastYear': company.get('economics', {}).get('balanceSheets', [{}])[0].get('year', '-'),
                 'facebook': company.get('socials', {}).get('facebook', [{}])[0].get('url', ''),
                 'linkedin': company.get('socials', {}).get('linkedin', [{}])[0].get('url', ''),
             }
