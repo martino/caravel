@@ -144,7 +144,6 @@ function sunburstVis(slice) {
       var click = function (d) {
         var sliceValue = d.name
           , filterName = groupBy[d.depth - 1];
-
         if (Object.keys(selectedValues).length == 0) {
           // add filter
           selectedValues[filterName] = [sliceValue];
@@ -157,6 +156,7 @@ function sunburstVis(slice) {
             selectedValues = {};
           } else {
             // reset filters with the new value
+            slice.clearFilter(true);
             selectedValues = {};
             selectedValues[filterName] = [sliceValue];
             slice.setFilter(filterName, selectedValues[filterName]);
