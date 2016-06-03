@@ -197,6 +197,7 @@ class Slice(Model, AuditMixinNullable):
 
     @property
     def data(self):
+        """Data used to render slice in templates"""
         d = {}
         self.token = ''
         try:
@@ -205,6 +206,11 @@ class Slice(Model, AuditMixinNullable):
         except Exception as e:
             d['error'] = str(e)
         d['slice_id'] = self.id
+        d['slice_name'] = self.slice_name
+        d['description'] = self.description
+        d['slice_url'] = self.slice_url
+        d['edit_url'] = self.edit_url
+        d['description_markeddown'] = self.description_markeddown
         return d
 
     @property
@@ -309,6 +315,7 @@ class Dashboard(Model, AuditMixinNullable):
             'dashboard_title': self.dashboard_title,
             'slug': self.slug,
             'slices': [slc.data for slc in self.slices],
+            'position_json': json.loads(self.position_json),
         }
         return json.dumps(d)
 
@@ -424,6 +431,7 @@ class Database(Model, AuditMixinNullable):
             ),
         }
         db_time_grains['redshift'] = db_time_grains['postgresql']
+        db_time_grains['vertica'] = db_time_grains['postgresql']
         for db_type, grains in db_time_grains.items():
             if self.sqlalchemy_uri.startswith(db_type):
                 return grains
@@ -1171,7 +1179,7 @@ class DruidDatasource(Model, AuditMixinNullable, Queryable):
                 if len(splitted) > 1:
                     for s in eq.split(','):
                         s = s.strip()
-                        fields.append(Filter.build_filter(Dimension(col) == s))
+                        fields.append(Dimension(col) == s)
                     cond = Filter(type="or", fields=fields)
                 else:
                     cond = Dimension(col) == eq
@@ -1181,8 +1189,8 @@ class DruidDatasource(Model, AuditMixinNullable, Queryable):
                 cond = Filter(type="regex", pattern=eq, dimension=col)
             if filters:
                 filters = Filter(type="and", fields=[
-                    Filter.build_filter(cond),
-                    Filter.build_filter(filters)
+                    cond,
+                    filters
                 ])
             else:
                 filters = cond
@@ -1219,11 +1227,11 @@ class DruidDatasource(Model, AuditMixinNullable, Queryable):
                 for unused, row in df.iterrows():
                     fields = []
                     for dim in dims:
-                        f = Filter.build_filter(Dimension(dim) == row[dim])
+                        f = Dimension(dim) == row[dim]
                         fields.append(f)
                     if len(fields) > 1:
                         filt = Filter(type="and", fields=fields)
-                        filters.append(Filter.build_filter(filt))
+                        filters.append(filt)
                     elif fields:
                         filters.append(fields[0])
 
@@ -1233,8 +1241,8 @@ class DruidDatasource(Model, AuditMixinNullable, Queryable):
                         qry['filter'] = ff
                     else:
                         qry['filter'] = Filter(type="and", fields=[
-                            Filter.build_filter(ff),
-                            Filter.build_filter(orig_filters)])
+                            ff,
+                            orig_filters])
                 qry['limit_spec'] = None
         if row_limit:
             qry['limit_spec'] = {
@@ -1282,7 +1290,6 @@ class Log(Model):
     user_id = Column(Integer, ForeignKey('ab_user.id'))
     dashboard_id = Column(Integer)
     slice_id = Column(Integer)
-    user_id = Column(Integer, ForeignKey('ab_user.id'))
     json = Column(Text)
     user = relationship('User', backref='logs', foreign_keys=[user_id])
     dttm = Column(DateTime, default=func.now())
