@@ -726,13 +726,12 @@ class SqlaTable(Model, Queryable, AuditMixinNullable):
             qry.compile(
                 engine, compile_kwargs={"literal_binds": True},),
             )
-        
-        start_date = datetime.now()
+
         df = pd.read_sql_query(
             sql=sql,
             con=engine
         )
-        time_elapsed = datetime.now() - start_date
+        time_elapsed = datetime.now() - qry_start_dttm
         print("{}\nExecuted in {} seconds\n".format(sql, time_elapsed.total_seconds()))
 
         sql = sqlparse.format(sql, reindent=True)
