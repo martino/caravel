@@ -715,61 +715,74 @@ class FormFactory(object):
                     "Description text that shows up below your Big "
                     "Number")
             }),
-            'source_field': SelectField(
-                'Source field',
-                choices=self.choicify(datasource.groupby_column_names),
-                description="Source field"),
-            'source_field_label': TextField(
-                'Source label',
-                description="Source field label",
-                default="source"),
-            'target_field': SelectField(
-                'Target field',
-                choices=self.choicify(datasource.groupby_column_names),
-                description="Target field"),
-            'target_field_label': TextField(
-                'Target label',
-                description="Target field label",
-                default="target"),
-            'filter_set': TextField(
-                'Filter set name',
-                description="Name of the filter set",
-                default="default"),
-            'target_filter_set': TextField(
-                'Target filter set name',
-                description="Name of the filter set to trigger filters",
-                default="default"),
-            'achene_field': SelectField(
-                'Achene field',
-                choices=self.choicify(datasource.groupby_column_names),
-                description="Achene field"),
-            'is_starred': SelectField(
-                'Is starred field',
-                choices=self.choicify(datasource.groupby_column_names),
-                description="Is starred field"),
-            'starred_label': TextField(
-                'Label for the starred elements',
-                description="Label for the starred elements",
-                default=""),
-            'atoka_results_limit': IntegerField(
-                'Maximum results from atoka',
-                default=20
-            ),
-            'map_type': SelectField(
-                "Map Type",
-                choices=self.choicify(['default', 'heatmap']),
-                default="default",
-                description="Select the map type"),
-            'map_table': TextField(
-                "CartoDB table",
-                description="CartoDB table name"),
-            'map_select': TextField(
-                "CartoDB SQL select clausule",
-                description="CartoDB SQL select",
-                default="*"),
-            'map_where': TextField(
-                "CartoDB SQL where clausule",
-                description="CartoDB SQL where"),
+            'is_starred': (SelectField, {
+                "label": 'Is starred field',
+                'choices': self.choicify(datasource.groupby_column_names),
+                'description': "Is starred field"
+            }),
+            'starred_label': (TextField, {
+                'label': 'Label for the starred elements',
+                'description': "Label for the starred elements",
+                'default': ""
+            }),
+            'source_field': (SelectField, {
+                'label': 'Source field',
+                'choices': self.choicify(datasource.groupby_column_names),
+                'description': "Source field"
+            }),
+            'source_field_label': (TextField, {
+                'label': 'Source label',
+                'description': "Source field label",
+                'default': "source"
+            }),
+            'target_field': (SelectField, {
+                'label': 'Target field',
+                'choices': self.choicify(datasource.groupby_column_names),
+                'description': "Target field"
+            }),
+            'target_field_label': (TextField, {
+                'label': 'Target label',
+                'description': "Target field label",
+                'default': "target"
+            }),
+            'filter_set': (TextField, {
+                'label': 'Filter set name',
+                'description': "Name of the filter set",
+                'default': "default"
+            }),
+            'target_filter_set': (TextField, {
+                'label': 'Target filter set name',
+                'description': "Name of the filter set to trigger filters",
+                'default': "default"
+            }),
+            'achene_field': (SelectField, {
+                'label': 'Achene field',
+                'choices': self.choicify(datasource.groupby_column_names),
+                'description': "Achene field"
+            }),
+            'atoka_results_limit': (IntegerField, {
+                'label': 'Maximum results from atoka',
+                'default': 20
+            }),
+            'map_type': (SelectField, {
+                'label': "Map Type",
+                'choices': self.choicify(['default', 'heatmap']),
+                'default': "default",
+                'description': "Select the map type"
+            }),
+            'map_table': (TextField, {
+                'label': "CartoDB table",
+                'description': "CartoDB table name"
+            }),
+            'map_select': (TextField, {
+                'label': "CartoDB SQL select clausule",
+                'description': "CartoDB SQL select",
+                'default': "*"
+            }),
+            'map_where': (TextField, {
+                'label': "CartoDB SQL where clausule",
+                'description': "CartoDB SQL where"
+            }),
         }
 
         # Override default arguments with form overrides
