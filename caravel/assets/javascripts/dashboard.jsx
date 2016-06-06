@@ -234,6 +234,7 @@ var Dashboard = function (dashboardData) {
       this.slices = sliceObjects;
       this.refreshTimer = null;
       this.startPeriodicRender(0);
+      this.bindResizeToWindowResize();
     },
     getFilterSet: function (filter_set_name) {
       if (!this.filters.hasOwnProperty(filter_set_name)) {
@@ -268,6 +269,18 @@ var Dashboard = function (dashboardData) {
     },
     getDashboardUrl: function () {
       return location.origin + location.pathname + encodeURI("?filters=" + JSON.stringify(this.filters));
+    },
+    bindResizeToWindowResize: function () {
+      var resizeTimer;
+      var dash = this;
+      $(window).on('resize', function (e) {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(function () {
+          dash.slices.forEach(function (slice) {
+            slice.resize();
+          });
+        }, 500);
+      });
     },
     stopPeriodicRender: function () {
       if (this.refreshTimer) {
